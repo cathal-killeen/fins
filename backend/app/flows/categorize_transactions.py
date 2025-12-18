@@ -2,8 +2,6 @@
 AI-powered transaction categorization workflow.
 """
 from prefect import flow, task
-from anthropic import Anthropic
-import os
 import json
 from typing import List, Dict, Any
 
@@ -11,12 +9,11 @@ from typing import List, Dict, Any
 @task(retries=2, retry_delay_seconds=30)
 async def categorize_batch(transaction_batch: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Categorize a batch of transactions using Claude API.
+    Categorize a batch of transactions using LLM.
     Batch size: 20-50 transactions for cost efficiency.
     """
     from app.services.categorization import check_categorization_rules, create_categorization_rule
-
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    from app.services.ai_service import llm_service
 
     # Check for learned patterns first
     categorized_by_rules = []
@@ -40,16 +37,10 @@ async def categorize_batch(transaction_batch: List[Dict[str, Any]]) -> List[Dict
     if needs_ai:
         prompt = build_categorization_prompt(needs_ai)
 
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=4096,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }]
-        )
+        messages = [{"role": "user", "content": prompt}]
+        response = await llm_service.complete(messages, max_tokens=4096)
 
-        ai_results = json.loads(message.content[0].text)
+        ai_results = json.loads(response)
 
     return categorized_by_rules + ai_results
 
