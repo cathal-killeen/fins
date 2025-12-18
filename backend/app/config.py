@@ -44,6 +44,9 @@ class Settings(BaseSettings):
 
     # File Upload
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    TEMP_UPLOAD_DIR: str = "/tmp/fins-uploads"
+    SUPPORTED_FILE_TYPES: list[str] = ["csv", "pdf"]
+    PROCESSING_TIMEOUT: int = 300  # 5 minutes
 
     model_config = SettingsConfigDict(
         env_file=".env",

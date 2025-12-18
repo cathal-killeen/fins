@@ -191,6 +191,330 @@ Focus on:
         return []
 
 
+async def analyze_statement_structure(content: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Analyze bank statement structure and extract metadata.
+
+    Args:
+        content: Parsed content from CSV or PDF parser
+                 For CSV: {'format_type': 'csv', 'transaction_count': int, 'date_range': {...}}
+                 For PDF: {'format_type': 'pdf', 'content': {...}, 'account_info': {...}}
+
+    Returns:
+        Dictionary with extracted metadata:
+        {
+            "institution": "bank name",
+            "account_number_last4": "last 4 digits or null",
+            "account_type": "checking|savings|credit_card|unknown",
+            "statement_period": {"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"},
+            "format_type": "csv|pdf_tabular|pdf_text",
+            "confidence": 0.95
+        }
+    """
+    # Build prompt based on content type
+    if content.get('format_type') == 'pdf':
+        pdf_content = content.get('content', {})
+        account_info = content.get('account_info', {})
+
+        prompt = f"""Analyze this bank statement and extract metadata.
+
+PDF Content:
+- Full Text Sample: {pdf_content.get('full_text', '')[:2000]}
+- Transaction Section: {pdf_content.get('transaction_section', '')[:1500]}
+- Has Tables: {pdf_content.get('has_tables', False)}
+- Detected Account Info: {json.dumps(account_info)}
+
+Return JSON with this structure:
+{{
+  "institution": "bank name (e.g., Chase, Bank of America)",
+  "account_number_last4": "last 4 digits or null",
+  "account_type": "checking|savings|credit_card|unknown",
+  "statement_period": {{"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"}},
+  "format_type": "pdf_tabular|pdf_text",
+  "confidence": 0.95
+}}
+
+Guidelines:
+- Use detected account info if available
+- Look for common bank names in headers
+- Identify account type from keywords (checking, savings, credit card)
+- Extract statement date range
+- Set confidence based on how much information you can extract
+"""
+    else:
+        # CSV format
+        csv_metadata = content
+        date_range = csv_metadata.get('date_range', {})
+
+        prompt = f"""Analyze this CSV bank statement metadata and extract information.
+
+CSV Metadata:
+- Format: CSV
+- Transaction count: {csv_metadata.get('transaction_count', 0)}
+- Date range: {date_range.get('start')} to {date_range.get('end')}
+
+Return JSON with this structure:
+{{
+  "institution": "bank name or null",
+  "account_number_last4": "null for CSV",
+  "account_type": "unknown",
+  "statement_period": {{"start_date": "{date_range.get('start', '')}", "end_date": "{date_range.get('end', '')}"}},
+  "format_type": "csv",
+  "confidence": 0.7
+}}
+
+Note: CSV files typically don't contain institution or account info, so those will be null/unknown.
+The user will need to specify the account during import.
+"""
+
+    messages = [{"role": "user", "content": prompt}]
+    response = await llm_service.complete(messages, temperature=0.1)
+
+    try:
+        metadata = json.loads(response)
+        return metadata
+    except json.JSONDecodeError:
+        # Return fallback metadata
+        return {
+            "institution": None,
+            "account_number_last4": None,
+            "account_type": "unknown",
+            "statement_period": content.get('date_range', {}),
+            "format_type": content.get('format_type', 'unknown'),
+            "confidence": 0.3
+        }
+
+
+async def extract_transactions(
+    content: Dict[str, Any],
+    statement_info: Dict[str, Any]
+) -> List[Dict[str, Any]]:
+    """
+    Extract transactions from parsed statement content.
+
+    Args:
+        content: Parsed content (CSV transactions or PDF content)
+        statement_info: Metadata from analyze_statement_structure()
+
+    Returns:
+        List of transaction dictionaries:
+        [{
+            "date": "YYYY-MM-DD",
+            "amount": -50.00,  # negative for expenses, positive for income
+            "description": "original description",
+            "merchant_name": "cleaned merchant name",
+            "category": "suggested category",
+            "confidence": 0.85
+        }]
+    """
+    # If content is already parsed transactions (from CSV), enhance with AI categorization
+    if isinstance(content, list) and len(content) > 0 and 'date' in content[0]:
+        # Already parsed CSV transactions - just add AI categorization
+        return await categorize_transactions_batch(content)
+
+    # PDF content - need to extract transactions from text/tables
+    pdf_content = content.get('content', {})
+
+    prompt = f"""Extract transactions from this bank statement.
+
+Statement Info: {json.dumps(statement_info)}
+
+Content:
+- Transaction Section: {pdf_content.get('transaction_section', '')}
+- Tables: {json.dumps(pdf_content.get('tables', [])[:2])}
+
+Return JSON array of transactions:
+[{{
+  "date": "YYYY-MM-DD",
+  "amount": -50.00,
+  "description": "original description",
+  "merchant_name": "cleaned merchant name",
+  "category": "Food",
+  "subcategory": "Restaurants",
+  "confidence": 0.85
+}}]
+
+Guidelines:
+- Skip headers, totals, and balance rows
+- Normalize dates to YYYY-MM-DD
+- Clean merchant names (remove IDs, locations, reference numbers)
+- Negative amounts for debits/expenses, positive for credits/income
+- Suggest category and subcategory
+- Set confidence based on clarity of data
+
+Categories: Income, Housing, Transportation, Food, Shopping, Entertainment, Healthcare, Financial, Personal, Travel, Other
+"""
+
+    messages = [{"role": "user", "content": prompt}]
+    response = await llm_service.complete(messages, max_tokens=4096, temperature=0.1)
+
+    try:
+        transactions = json.loads(response)
+        return transactions
+    except json.JSONDecodeError:
+        return []
+
+
+async def categorize_transactions_batch(
+    transactions: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """
+    Categorize a batch of transactions using AI.
+
+    Args:
+        transactions: List of transaction dicts with date, amount, description, merchant_name
+
+    Returns:
+        Same transactions with added category, subcategory, and confidence fields
+    """
+    if not transactions:
+        return []
+
+    # Define category structure
+    categories = {
+        "Income": ["Salary", "Freelance", "Investment Income", "Gifts", "Refunds"],
+        "Housing": ["Rent/Mortgage", "Utilities", "Internet", "Home Maintenance", "Furniture"],
+        "Transportation": ["Gas", "Public Transit", "Ride Share", "Car Maintenance", "Parking"],
+        "Food": ["Groceries", "Restaurants", "Coffee Shops", "Fast Food", "Delivery"],
+        "Shopping": ["Clothing", "Electronics", "Home Goods", "Personal Care", "Books"],
+        "Entertainment": ["Streaming Services", "Movies", "Gaming", "Hobbies", "Events"],
+        "Healthcare": ["Medical", "Dental", "Pharmacy", "Health Insurance", "Fitness"],
+        "Financial": ["Bank Fees", "Interest", "Investments", "Insurance", "Taxes"],
+        "Personal": ["Haircut", "Spa", "Subscriptions", "Gifts", "Education"],
+        "Travel": ["Flights", "Hotels", "Vacation", "Travel Insurance"],
+        "Other": ["Uncategorized"]
+    }
+
+    # Limit batch size to avoid token limits
+    batch_size = 30
+    all_categorized = []
+
+    for i in range(0, len(transactions), batch_size):
+        batch = transactions[i:i+batch_size]
+
+        prompt = f"""You are a financial transaction categorization expert. Analyze these transactions and categorize each one.
+
+Available categories and subcategories:
+{json.dumps(categories, indent=2)}
+
+Transactions to categorize:
+{json.dumps(batch, indent=2, default=str)}
+
+For each transaction, determine:
+1. The most appropriate category and subcategory
+2. Your confidence level (0.0 to 1.0)
+
+Return ONLY a JSON array with this structure:
+[
+  {{
+    "date": "YYYY-MM-DD",
+    "amount": -50.00,
+    "description": "...",
+    "merchant_name": "...",
+    "category": "category_name",
+    "subcategory": "subcategory_name",
+    "confidence": 0.95
+  }}
+]
+
+Guidelines:
+- Use merchant name as primary signal
+- Consider transaction amount patterns
+- Be conservative with confidence scores
+- If truly unclear, use confidence < 0.5 and suggest "Other"
+"""
+
+        messages = [{"role": "user", "content": prompt}]
+        response = await llm_service.complete(messages, max_tokens=4096, temperature=0.1)
+
+        try:
+            categorized_batch = json.loads(response)
+            all_categorized.extend(categorized_batch)
+        except json.JSONDecodeError:
+            # If parsing fails, return original batch with default category
+            for txn in batch:
+                txn['category'] = 'Other'
+                txn['subcategory'] = 'Uncategorized'
+                txn['confidence'] = 0.0
+            all_categorized.extend(batch)
+
+    return all_categorized
+
+
+async def suggest_account_match(
+    statement_metadata: Dict[str, Any],
+    user_accounts: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """
+    Suggest which account this statement belongs to.
+
+    Args:
+        statement_metadata: Extracted metadata from analyze_statement_structure()
+        user_accounts: List of user's existing accounts
+
+    Returns:
+        {
+            "suggested_account_id": "uuid or null",
+            "confidence": 0.95,
+            "reasoning": "explanation",
+            "should_create_new": true/false,
+            "suggested_account_name": "name for new account if creating"
+        }
+    """
+    prompt = f"""You are a financial account matching expert. Determine which account this statement belongs to.
+
+Statement Metadata:
+{json.dumps(statement_metadata, indent=2)}
+
+User's Existing Accounts:
+{json.dumps(user_accounts, indent=2)}
+
+Analyze and return JSON:
+{{
+  "suggested_account_id": "uuid of best match or null",
+  "confidence": 0.95,
+  "reasoning": "explanation of why this account matches",
+  "should_create_new": true/false,
+  "suggested_account_name": "name for new account if creating"
+}}
+
+Matching criteria (in order of importance):
+1. Institution name + account_number_last4 = EXACT match (confidence 1.0)
+2. Institution name + account_type = STRONG match (confidence 0.8)
+3. Account_type only = WEAK match (confidence 0.5)
+4. No matches = suggest creating new account
+
+Guidelines:
+- If multiple accounts match, choose the most recent or active one
+- If no good match (confidence < 0.7), suggest creating new account
+- For new accounts, suggest a descriptive name like "Chase Checking (...1234)"
+"""
+
+    messages = [{"role": "user", "content": prompt}]
+    response = await llm_service.complete(messages, temperature=0.1)
+
+    try:
+        suggestion = json.loads(response)
+        return suggestion
+    except json.JSONDecodeError:
+        # Return fallback - suggest creating new account
+        institution = statement_metadata.get('institution', 'Unknown')
+        account_type = statement_metadata.get('account_type', 'Unknown')
+        last4 = statement_metadata.get('account_number_last4', '')
+
+        account_name = f"{institution} {account_type.title()}"
+        if last4:
+            account_name += f" (...{last4})"
+
+        return {
+            "suggested_account_id": None,
+            "confidence": 0.0,
+            "reasoning": "Unable to parse AI response",
+            "should_create_new": True,
+            "suggested_account_name": account_name
+        }
+
+
 async def get_user_financial_context(user_id: str) -> Dict[str, Any]:
     """
     Get user's financial context for AI processing.

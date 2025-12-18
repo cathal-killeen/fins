@@ -4,7 +4,7 @@ Main FastAPI application.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import auth, accounts, transactions, analytics, ai_chat
+from app.api import auth, accounts, transactions, analytics, ai_chat, chat
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -48,6 +48,7 @@ app.include_router(accounts.router, prefix="/api/accounts", tags=["Accounts"])
 app.include_router(transactions.router, prefix="/api/transactions", tags=["Transactions"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(ai_chat.router, prefix="/api/ai", tags=["AI"])
+app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 
 
 if __name__ == "__main__":
