@@ -5,6 +5,7 @@ Generic AI service supporting multiple LLM providers via LiteLLM.
 from litellm import completion
 from app.config import settings
 import json
+import logging
 from typing import Dict, Any, List, Optional
 
 
@@ -13,17 +14,27 @@ class LLMService:
 
     def __init__(self):
         """Initialize LLM service with configured provider."""
-        self.provider = settings.LLM_PROVIDER
+        self.logger = logging.getLogger(__name__)
+        self.provider = settings.LLM_PROVIDER.lower()
         self.model = self._get_model_name()
         self.api_key = self._get_api_key()
         self.api_base = settings.LLM_API_BASE
         self.temperature = settings.LLM_TEMPERATURE
         self.max_tokens = settings.LLM_MAX_TOKENS
+        self.logger.info("LLM config: provider=%s model=%s api_base=%s", self.provider, self.model, self.api_base)
 
     def _get_model_name(self) -> str:
         """Get the full model name for the configured provider."""
         # LiteLLM uses provider prefixes for some models
         model = settings.LLM_MODEL
+
+        # Normalize Gemini list-models output (they return names like "models/gemini-1.5-pro")
+        if self.provider in {"google", "gemini"} and model.startswith("models/"):
+            model = model.removeprefix("models/")
+
+        # If model already includes a provider prefix, keep it as-is
+        if "/" in model:
+            return model
 
         # Map provider to model format
         provider_map = {
@@ -32,10 +43,12 @@ class LLMService:
             "azure": f"azure/{model}",
             "bedrock": f"bedrock/{model}",
             "vertex_ai": f"vertex_ai/{model}",
+            "gemini": f"gemini/{model}",
+            "google": f"gemini/{model}",
             "ollama": f"ollama/{model}",
         }
 
-        return provider_map.get(self.provider, model)
+        return provider_map.get(self.provider, f"gemini/{model}" if model.startswith("gemini-") else model)
 
     def _get_api_key(self) -> Optional[str]:
         """Get API key for the configured provider."""
@@ -73,6 +86,9 @@ class LLMService:
             "temperature": temperature or self.temperature,
             "max_tokens": max_tokens or self.max_tokens,
         }
+
+        if self.provider in {"google", "gemini"}:
+            kwargs["custom_llm_provider"] = "gemini"
 
         # Add API key if available
         if self.api_key:

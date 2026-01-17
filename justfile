@@ -177,6 +177,14 @@ db-rollback-to revision:
 shell:
     cd backend && uv run python
 
+# Test LLM connectivity using current backend/.env settings
+llm-test:
+    cd backend && uv run python scripts/llm_test.py
+
+# List Gemini models available for the configured API key
+llm-list-models:
+    cd backend && uv run python scripts/llm_list_models.py
+
 # Show project statistics
 stats:
     @echo "Project Statistics:"
