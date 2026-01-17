@@ -16,6 +16,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+logger.info(f"DEBUG setting: {settings.DEBUG}")
 
 app = FastAPI(
     title=settings.APP_NAME,

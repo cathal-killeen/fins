@@ -3,6 +3,7 @@ Chat API endpoints for file upload and processing.
 """
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks
+import logging
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.api.auth import get_current_user
@@ -16,6 +17,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class UploadResponse(BaseModel):
@@ -119,6 +121,7 @@ async def upload_statement(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("Upload failed")
         raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
 
 

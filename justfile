@@ -79,6 +79,12 @@ db-init:
     psql -d fins -f backend/init_db.sql
     @echo "✅ Database initialized"
 
+# Create a development test user matching the hardcoded auth user
+create-test-user:
+    @echo "Creating test user..."
+    @PGPASSWORD=postgres psql -h localhost -U postgres -d fins -c "BEGIN; DELETE FROM users WHERE id = '00000000-0000-0000-0000-000000000001' OR email = 'test@fins.dev'; INSERT INTO users (id, email, password_hash, full_name) VALUES ('00000000-0000-0000-0000-000000000001', 'test@fins.dev', 'dev-password-not-used', 'Test User'); COMMIT;"
+    @echo "✅ Test user ready (id: 00000000-0000-0000-0000-000000000001)"
+
 # Reset the database (WARNING: destroys all data)
 db-reset:
     @echo "⚠️  WARNING: This will destroy all data!"
