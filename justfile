@@ -79,6 +79,35 @@ db-init:
     cd backend && uv run python -c "code='import asyncio\\nfrom tortoise import Tortoise\\nfrom app.database import TORTOISE_ORM\\n\\nasync def main():\\n    await Tortoise.init(config=TORTOISE_ORM)\\n    await Tortoise.generate_schemas(safe=True)\\n    await Tortoise.close_connections()\\n\\nasyncio.run(main())'; exec(code)"
     @echo "✅ Database initialized"
 
+# Initialize Aerich migrations (run once)
+migrate-init:
+    @echo "Initializing Aerich migrations..."
+    cd backend && uv run aerich init -t app.database.TORTOISE_ORM
+    cd backend && uv run aerich init-db
+    @echo "✅ Aerich initialized"
+
+# Create a new migration
+migrate name:
+    @echo "Creating migration: {{name}}"
+    cd backend && uv run aerich migrate --name "{{name}}"
+    @echo "✅ Migration created"
+
+# Apply migrations
+migrate-up:
+    @echo "Applying migrations..."
+    cd backend && uv run aerich upgrade
+    @echo "✅ Migrations applied"
+
+# Rollback last migration
+migrate-down:
+    @echo "Rolling back last migration..."
+    cd backend && uv run aerich downgrade
+    @echo "✅ Rollback complete"
+
+# Show migration history
+migrate-history:
+    @echo "Migration history:"
+    cd backend && uv run aerich history
 # Create a development test user matching the hardcoded auth user
 create-test-user:
     @echo "Creating test user..."
