@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-this-to-a-random-secret-key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ADMIN_USERNAME: Optional[str] = None
+    ADMIN_PASSWORD: Optional[str] = None
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     # AI / LLM Configuration
     LLM_PROVIDER: str = "anthropic"  # anthropic, openai, azure, bedrock, etc.

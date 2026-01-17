@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from tortoise.contrib.fastapi import register_tortoise
+from app.admin import admin_app, init_admin
 from app.config import settings
 from app.database import TORTOISE_ORM
 from app.api import auth, accounts, transactions, analytics, ai_chat, chat
@@ -26,12 +27,19 @@ app = FastAPI(
     description="AI-powered personal finance tracking application",
 )
 
+app.mount("/admin", admin_app)
+
 register_tortoise(
     app,
     config=TORTOISE_ORM,
     generate_schemas=True,
     add_exception_handlers=True,
 )
+
+
+@app.on_event("startup")
+async def setup_admin():
+    await init_admin()
 
 # Configure CORS
 app.add_middleware(

@@ -2,6 +2,7 @@
 Tortoise ORM models for the Fins application.
 """
 
+from app.models.admin import Admin
 from app.models.user import User
 from app.models.account import Account
 from app.models.transaction import Transaction
@@ -11,6 +12,7 @@ from app.models.sync_job import SyncJob
 
 __all__ = [
     "User",
+    "Admin",
     "Account",
     "Transaction",
     "CategorizationRule",

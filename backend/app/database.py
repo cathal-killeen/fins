@@ -15,7 +15,7 @@ TORTOISE_ORM = {
     "connections": {"default": _normalize_db_url(settings.DATABASE_URL)},
     "apps": {
         "models": {
-            "models": ["app.models"],
+            "models": ["app.models", "fastapi_admin.models"],
             "default_connection": "default",
         }
     },
