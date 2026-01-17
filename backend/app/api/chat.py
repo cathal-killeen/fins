@@ -9,13 +9,11 @@ from app.api.auth import get_current_user
 from app.services.file_handler import (
     save_uploaded_file,
     generate_job_id,
-    cleanup_temp_file,
 )
 from app.services.statement_processor import StatementProcessor
 from app.services.sync_job_service import SyncJobService
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
-import asyncio
+from typing import Optional
 
 router = APIRouter()
 
@@ -113,7 +111,7 @@ async def upload_statement(
 
         return UploadResponse(
             job_id=job_id,
-            message=f"File uploaded successfully. Processing started.",
+            message="File uploaded successfully. Processing started.",
             file_name=file.filename or f"statement.{file_type}",
             file_size=file_size,
         )

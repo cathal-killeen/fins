@@ -12,8 +12,6 @@ Processing stages:
 """
 
 from typing import Dict, Any, List, Optional
-from pathlib import Path
-import asyncio
 from sqlalchemy.orm import Session
 
 from app.utils.csv_parser import parse_csv_file, extract_statement_metadata
@@ -23,7 +21,7 @@ from app.services.ai_service import (
     extract_transactions,
     suggest_account_match,
 )
-from app.services.file_handler import cleanup_uploaded_file
+from app.services.file_handler import cleanup_temp_file
 from app.services.account_service import AccountService
 from app.services.transaction_service import TransactionService
 from app.services.sync_job_service import SyncJobService
@@ -106,7 +104,7 @@ class StatementProcessor:
                 status.set_error(parsed_content["error"])
                 return self._build_result(status, parsed_content)
 
-            status.update(ProcessingStage.PARSING, 25, f"File parsed successfully")
+            status.update(ProcessingStage.PARSING, 25, "File parsed successfully")
 
             # Stage 2: AI structure analysis (25% -> 40%)
             status.update(
@@ -354,7 +352,7 @@ class StatementProcessor:
         """Clean up temporary files."""
         if file_path:
             try:
-                cleanup_uploaded_file(file_path)
+                cleanup_temp_file(file_path)
             except Exception as e:
                 # Log error but don't fail processing
                 print(f"Failed to cleanup file {file_path}: {e}")

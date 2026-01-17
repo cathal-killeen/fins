@@ -6,7 +6,6 @@ import pandas as pd
 import re
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from pathlib import Path
 
 
 def detect_delimiter(file_path: str) -> str:
@@ -65,7 +64,7 @@ def parse_date(date_str: str) -> Optional[str]:
     try:
         dt = pd.to_datetime(date_str)
         return dt.strftime("%Y-%m-%d")
-    except:
+    except (ValueError, TypeError, pd.errors.ParserError):
         return None
 
 

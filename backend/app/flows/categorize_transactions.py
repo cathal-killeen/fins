@@ -17,7 +17,6 @@ async def categorize_batch(
     """
     from app.services.categorization import (
         check_categorization_rules,
-        create_categorization_rule,
     )
     from app.services.ai_service import llm_service
 

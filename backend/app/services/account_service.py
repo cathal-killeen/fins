@@ -4,11 +4,9 @@ Account service - Database operations for accounts.
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_
 from datetime import datetime
 
 from app.models.account import Account
-from app.models.user import User
 
 
 class AccountService:
@@ -27,7 +25,7 @@ class AccountService:
         accounts = (
             self.db.query(Account)
             .filter(Account.user_id == user_id)
-            .filter(Account.is_active == True)
+            .filter(Account.is_active)
             .order_by(Account.created_at.desc())
             .all()
         )
@@ -78,7 +76,7 @@ class AccountService:
         query = (
             self.db.query(Account)
             .filter(Account.user_id == user_id)
-            .filter(Account.is_active == True)
+            .filter(Account.is_active)
         )
 
         # Exact match on all criteria (best match)

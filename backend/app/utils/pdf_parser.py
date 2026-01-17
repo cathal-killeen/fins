@@ -6,7 +6,6 @@ import pdfplumber
 import PyPDF2
 import re
 from typing import List, Dict, Any, Optional
-from pathlib import Path
 
 
 def extract_text_from_pdf(file_path: str) -> str:

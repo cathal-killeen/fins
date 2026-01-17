@@ -15,12 +15,6 @@ from app.config import settings
 from app.database import Base
 
 # Import all models so they're registered with Base.metadata
-from app.models.user import User
-from app.models.account import Account
-from app.models.transaction import Transaction
-from app.models.categorization_rule import CategorizationRule
-from app.models.budget import Budget
-from app.models.sync_job import SyncJob
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -4,12 +4,10 @@ Transaction service - Database operations for transactions.
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 
 from app.models.transaction import Transaction
-from app.models.account import Account
 
 
 class TransactionService:

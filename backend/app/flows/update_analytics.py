@@ -14,7 +14,6 @@ async def sync_to_duckdb():
     Sync data from PostgreSQL to DuckDB for analytics.
     Uses incremental updates based on last sync timestamp.
     """
-    from app.database import get_postgres_connection
     from app.config import settings
 
     conn = duckdb.connect(settings.DUCKDB_PATH)

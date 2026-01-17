@@ -50,7 +50,7 @@ def validate_file_type(file: UploadFile) -> str:
             content = file_header.decode("utf-8")
             if "," in content or ";" in content:
                 return "csv"
-        except:
+        except (UnicodeDecodeError, AttributeError):
             pass
 
     if file_type == "application/pdf":
