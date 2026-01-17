@@ -3,7 +3,6 @@ Account service - Database operations for accounts.
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.models.account import Account
@@ -12,27 +11,22 @@ from app.models.account import Account
 class AccountService:
     """Service for account-related database operations."""
 
-    def __init__(self, db: Session):
-        self.db = db
-
-    def get_user_accounts(self, user_id: str) -> List[Dict[str, Any]]:
+    async def get_user_accounts(self, user_id: str) -> List[Dict[str, Any]]:
         """
         Get all accounts for a user.
 
         Returns:
             List of account dictionaries
         """
-        accounts = (
-            self.db.query(Account)
-            .filter(Account.user_id == user_id)
-            .filter(Account.is_active)
-            .order_by(Account.created_at.desc())
+        accounts = await (
+            Account.filter(user_id=user_id, is_active=True)
+            .order_by("-created_at")
             .all()
         )
 
         return [self._account_to_dict(account) for account in accounts]
 
-    def get_account_by_id(
+    async def get_account_by_id(
         self, account_id: str, user_id: str
     ) -> Optional[Dict[str, Any]]:
         """
@@ -45,16 +39,11 @@ class AccountService:
         Returns:
             Account dictionary or None
         """
-        account = (
-            self.db.query(Account)
-            .filter(Account.id == account_id)
-            .filter(Account.user_id == user_id)
-            .first()
-        )
+        account = await Account.filter(id=account_id, user_id=user_id).first()
 
         return self._account_to_dict(account) if account else None
 
-    def find_matching_accounts(
+    async def find_matching_accounts(
         self,
         user_id: str,
         institution: Optional[str] = None,
@@ -73,18 +62,14 @@ class AccountService:
         Returns:
             List of matching accounts, ordered by match quality
         """
-        query = (
-            self.db.query(Account)
-            .filter(Account.user_id == user_id)
-            .filter(Account.is_active)
-        )
+        query = Account.filter(user_id=user_id, is_active=True)
 
         # Exact match on all criteria (best match)
         if institution and account_type and account_number_last4:
-            exact_matches = (
-                query.filter(Account.institution.ilike(f"%{institution}%"))
-                .filter(Account.account_type == account_type)
-                .filter(Account.account_number_last4 == account_number_last4)
+            exact_matches = await (
+                query.filter(institution__icontains=institution)
+                .filter(account_type=account_type)
+                .filter(account_number_last4=account_number_last4)
                 .all()
             )
             if exact_matches:
@@ -92,9 +77,9 @@ class AccountService:
 
         # Strong match: institution + account_type
         if institution and account_type:
-            strong_matches = (
-                query.filter(Account.institution.ilike(f"%{institution}%"))
-                .filter(Account.account_type == account_type)
+            strong_matches = await (
+                query.filter(institution__icontains=institution)
+                .filter(account_type=account_type)
                 .all()
             )
             if strong_matches:
@@ -102,9 +87,9 @@ class AccountService:
 
         # Medium match: institution + last4
         if institution and account_number_last4:
-            medium_matches = (
-                query.filter(Account.institution.ilike(f"%{institution}%"))
-                .filter(Account.account_number_last4 == account_number_last4)
+            medium_matches = await (
+                query.filter(institution__icontains=institution)
+                .filter(account_number_last4=account_number_last4)
                 .all()
             )
             if medium_matches:
@@ -112,21 +97,21 @@ class AccountService:
 
         # Weak match: just institution
         if institution:
-            weak_matches = query.filter(
-                Account.institution.ilike(f"%{institution}%")
+            weak_matches = await query.filter(
+                institution__icontains=institution
             ).all()
             if weak_matches:
                 return [self._account_to_dict(acc) for acc in weak_matches]
 
         # Very weak match: just account_type
         if account_type:
-            type_matches = query.filter(Account.account_type == account_type).all()
+            type_matches = await query.filter(account_type=account_type).all()
             if type_matches:
                 return [self._account_to_dict(acc) for acc in type_matches]
 
         return []
 
-    def create_account(
+    async def create_account(
         self, user_id: str, account_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
@@ -139,7 +124,7 @@ class AccountService:
         Returns:
             Created account dictionary
         """
-        account = Account(
+        account = await Account.create(
             user_id=user_id,
             account_name=account_data.get("account_name"),
             account_type=account_data.get("account_type", "unknown"),
@@ -151,13 +136,9 @@ class AccountService:
             meta=account_data.get("meta", {}),
         )
 
-        self.db.add(account)
-        self.db.commit()
-        self.db.refresh(account)
-
         return self._account_to_dict(account)
 
-    def update_account(
+    async def update_account(
         self, account_id: str, user_id: str, updates: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
@@ -171,12 +152,7 @@ class AccountService:
         Returns:
             Updated account dictionary or None
         """
-        account = (
-            self.db.query(Account)
-            .filter(Account.id == account_id)
-            .filter(Account.user_id == user_id)
-            .first()
-        )
+        account = await Account.filter(id=account_id, user_id=user_id).first()
 
         if not account:
             return None
@@ -202,8 +178,7 @@ class AccountService:
 
         account.updated_at = datetime.utcnow()
 
-        self.db.commit()
-        self.db.refresh(account)
+        await account.save()
 
         return self._account_to_dict(account)
 

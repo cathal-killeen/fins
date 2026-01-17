@@ -20,7 +20,7 @@ Fins is a modern personal finance application that uses AI to automatically cate
 - **DuckDB** - Analytics and aggregations
 - **Prefect** - Workflow orchestration
 - **LiteLLM** - Multi-provider LLM support
-- **SQLAlchemy** - ORM
+- **Tortoise ORM** - ORM
 
 ### Frontend
 - **React** - UI library
@@ -94,8 +94,8 @@ uv sync
 3. Set up PostgreSQL database:
 ```bash
 createdb fins
-psql -d fins -f init_db.sql
 ```
+Tables are created automatically on app startup via Tortoise ORM.
 
 4. Configure environment variables:
 ```bash
@@ -208,13 +208,12 @@ fins/
 │   ├── app/
 │   │   ├── api/          # API endpoints
 │   │   ├── flows/        # Prefect workflows
-│   │   ├── models/       # SQLAlchemy models
+│   │   ├── models/       # Tortoise ORM models
 │   │   ├── schemas/      # Pydantic schemas
 │   │   ├── services/     # Business logic
 │   │   ├── config.py     # Configuration
 │   │   ├── database.py   # Database setup
 │   │   └── main.py       # FastAPI app
-│   ├── init_db.sql       # Database schema
 │   ├── pyproject.toml    # Python dependencies
 │   └── Dockerfile
 ├── frontend/
@@ -241,20 +240,9 @@ cd backend
 uv run pytest
 ```
 
-### Database Migrations
+### Database Schema
 
-Fins uses Alembic for database migrations:
-
-```bash
-# Create a new migration
-uv run alembic revision --autogenerate -m "description"
-
-# Apply migrations
-uv run alembic upgrade head
-
-# Rollback
-uv run alembic downgrade -1
-```
+Tortoise ORM creates tables automatically on app startup in development.
 
 ### Adding Transaction Partitions
 

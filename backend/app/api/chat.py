@@ -4,8 +4,6 @@ Chat API endpoints for file upload and processing.
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks
 import logging
-from sqlalchemy.orm import Session
-from app.database import get_db
 from app.api.auth import get_current_user
 from app.services.file_handler import (
     save_uploaded_file,
@@ -46,11 +44,11 @@ class AccountConfirmRequest(BaseModel):
 
 
 async def process_statement_background(
-    file_path: str, file_type: str, job_id: str, user_id: str, db: Session
+    file_path: str, file_type: str, job_id: str, user_id: str
 ):
     """Background task to process statement."""
-    processor = StatementProcessor(db)
-    sync_job_service = SyncJobService(db)
+    processor = StatementProcessor()
+    sync_job_service = SyncJobService()
 
     try:
         result = await processor.process_statement(
@@ -58,7 +56,7 @@ async def process_statement_background(
         )
 
         # Update job in database
-        sync_job_service.update_job(
+        await sync_job_service.update_job(
             job_id=job_id,
             status=result["stage"],
             stage=result["stage"],
@@ -69,7 +67,7 @@ async def process_statement_background(
 
     except Exception as e:
         # Update job with error status
-        sync_job_service.update_job(
+        await sync_job_service.update_job(
             job_id=job_id,
             status="failed",
             stage="failed",
@@ -83,7 +81,6 @@ async def upload_statement(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """
     Upload a bank statement (CSV or PDF) for processing.
@@ -98,8 +95,8 @@ async def upload_statement(
         file_path, file_size, file_type = await save_uploaded_file(file, job_id)
 
         # Create job in database
-        sync_job_service = SyncJobService(db)
-        sync_job_service.create_job(
+        sync_job_service = SyncJobService()
+        await sync_job_service.create_job(
             user_id=str(current_user["id"]), job_id=job_id, job_type="file_upload"
         )
 
@@ -110,7 +107,6 @@ async def upload_statement(
             file_type,
             job_id,
             str(current_user["id"]),
-            db,
         )
 
         return UploadResponse(
@@ -129,7 +125,7 @@ async def upload_statement(
 
 @router.get("/processing-status/{job_id}", response_model=ProcessingStatusResponse)
 async def get_processing_status(
-    job_id: str, current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    job_id: str, current_user=Depends(get_current_user)
 ):
     """
     Get the current processing status of an uploaded statement.
@@ -137,8 +133,8 @@ async def get_processing_status(
     Poll this endpoint every 2 seconds while status is not 'completed' or 'failed'.
     """
     # Get job status from database
-    sync_job_service = SyncJobService(db)
-    job = sync_job_service.get_job(job_id, user_id=str(current_user["id"]))
+    sync_job_service = SyncJobService()
+    job = await sync_job_service.get_job(job_id, user_id=str(current_user["id"]))
 
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
@@ -163,7 +159,6 @@ async def confirm_account(
     request: AccountConfirmRequest,
     background_tasks: BackgroundTasks,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """
     Confirm or create account for transaction import.
@@ -173,8 +168,8 @@ async def confirm_account(
     job_id = request.job_id
 
     # Check if job exists
-    sync_job_service = SyncJobService(db)
-    job = sync_job_service.get_job(job_id, user_id=str(current_user["id"]))
+    sync_job_service = SyncJobService()
+    job = await sync_job_service.get_job(job_id, user_id=str(current_user["id"]))
 
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
@@ -203,7 +198,7 @@ async def confirm_account(
         }
 
     # Update status to show we're resuming
-    sync_job_service.update_job(
+    await sync_job_service.update_job(
         job_id=job_id,
         status="running",
         stage="extracting_transactions",
@@ -215,8 +210,8 @@ async def confirm_account(
 
     # Resume processing in background
     async def continue_processing():
-        processor = StatementProcessor(db)
-        sync_service = SyncJobService(db)
+        processor = StatementProcessor()
+        sync_service = SyncJobService()
 
         try:
             result = await processor.continue_after_confirmation(
@@ -227,7 +222,7 @@ async def confirm_account(
             )
 
             # Update job with result
-            sync_service.update_job(
+            await sync_service.update_job(
                 job_id=job_id,
                 status=result["stage"],
                 stage=result["stage"],
@@ -239,7 +234,7 @@ async def confirm_account(
             )
         except Exception as e:
             # Update job with error
-            sync_service.update_job(
+            await sync_service.update_job(
                 job_id=job_id,
                 status="failed",
                 stage="failed",

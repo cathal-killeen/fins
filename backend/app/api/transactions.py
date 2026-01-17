@@ -3,8 +3,6 @@ Transactions API endpoints.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
-from sqlalchemy.orm import Session
-from app.database import get_db
 from app.api.auth import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional
@@ -62,7 +60,6 @@ async def list_transactions(
     limit: int = Query(default=100, le=500),
     offset: int = 0,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """List transactions with optional filters."""
     # TODO: Implement transaction listing with filters
@@ -75,7 +72,6 @@ async def list_transactions(
 async def create_transaction(
     transaction: TransactionCreate,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Create a new transaction manually."""
     # TODO: Implement transaction creation
@@ -89,7 +85,6 @@ async def create_transaction(
 async def get_transaction(
     transaction_id: str,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Get a specific transaction by ID."""
     # TODO: Implement transaction retrieval
@@ -103,7 +98,6 @@ async def update_transaction(
     transaction_id: str,
     transaction: TransactionUpdate,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Update a transaction (e.g., change category, add notes)."""
     # TODO: Implement transaction update
@@ -117,7 +111,6 @@ async def update_transaction(
 async def delete_transaction(
     transaction_id: str,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Delete a transaction."""
     # TODO: Implement transaction deletion
@@ -132,7 +125,6 @@ async def import_transactions(
     file: UploadFile = File(...),
     account_id: str = Query(...),
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Import transactions from a CSV file."""
     # TODO: Implement CSV import
@@ -148,7 +140,7 @@ async def import_transactions(
 
 @router.post("/categorize")
 async def trigger_categorization(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user)
 ):
     """Trigger AI categorization for uncategorized transactions."""
     # TODO: Trigger Prefect categorization flow

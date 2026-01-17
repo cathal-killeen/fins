@@ -2,68 +2,37 @@
 Budget model.
 """
 
-from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Boolean,
-    Numeric,
-    Date,
-    Float,
-    ForeignKey,
-    UniqueConstraint,
-)
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
-
-from app.database import Base
+from tortoise import fields
+from tortoise.models import Model
 
 
-class Budget(Base):
+class Budget(Model):
     """Budget model."""
 
-    __tablename__ = "budgets"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    id = fields.UUIDField(pk=True)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="budgets", on_delete=fields.CASCADE
     )
 
-    category = Column(String(100), nullable=False)
-    subcategory = Column(String(100))
+    category = fields.CharField(max_length=100)
+    subcategory = fields.CharField(max_length=100, null=True)
 
-    amount = Column(Numeric(15, 2), nullable=False)
-    period = Column(String(20), nullable=False)  # monthly, quarterly, yearly
+    amount = fields.DecimalField(max_digits=15, decimal_places=2)
+    period = fields.CharField(max_length=20)  # monthly, quarterly, yearly
 
-    start_date = Column(Date, nullable=False)
-    end_date = Column(Date)
+    start_date = fields.DateField()
+    end_date = fields.DateField(null=True)
 
-    rollover_enabled = Column(Boolean, default=False)
-    alert_threshold = Column(Float, default=0.8)  # Alert at 80%
+    rollover_enabled = fields.BooleanField(default=False)
+    alert_threshold = fields.FloatField(default=0.8)  # Alert at 80%
 
-    is_active = Column(Boolean, default=True)
+    is_active = fields.BooleanField(default=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = fields.DatetimeField(auto_now_add=True)
 
-    # Relationships
-    user = relationship("User", back_populates="budgets")
+    class Meta:
+        table = "budgets"
+        unique_together = (("user", "category", "subcategory", "period", "start_date"),)
 
-    # Unique constraint
-    __table_args__ = (
-        UniqueConstraint(
-            "user_id",
-            "category",
-            "subcategory",
-            "period",
-            "start_date",
-            name="uq_user_budget",
-        ),
-    )
-
-    def __repr__(self):
+    def __str__(self):
         return f"<Budget(id={self.id}, category={self.category}, amount={self.amount}, period={self.period})>"

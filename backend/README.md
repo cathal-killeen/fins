@@ -30,12 +30,7 @@ Edit `.env` with your configuration:
 createdb fins
 ```
 
-2. Run the initialization script:
-```bash
-psql -d fins -f init_db.sql
-```
-
-Or use the provided SQL directly in your PostgreSQL client.
+2. Start the backend once to auto-create tables via Tortoise ORM.
 
 ### Run the Server
 
@@ -72,7 +67,7 @@ backend/
 │   │   ├── update_analytics.py
 │   │   ├── recurring_detection.py
 │   │   └── budget_alerts.py
-│   ├── models/           # SQLAlchemy models (TODO)
+│   ├── models/           # Tortoise ORM models
 │   ├── schemas/          # Pydantic schemas (TODO)
 │   ├── services/         # Business logic
 │   │   ├── ai_service.py
@@ -84,7 +79,6 @@ backend/
 │   ├── database.py       # Database connections
 │   └── main.py           # FastAPI application
 ├── tests/                # Test files
-├── init_db.sql           # Database schema
 ├── deploy_flows.py       # Prefect deployment script
 ├── pyproject.toml        # Project dependencies
 └── README.md
@@ -202,7 +196,6 @@ uv run pytest --cov=app --cov-report=html
 
 ### PostgreSQL Schema
 
-See [init_db.sql](init_db.sql) for the complete schema.
 
 Key tables:
 - `users` - User accounts
@@ -232,19 +225,9 @@ DuckDB is used for fast analytical queries. Data is synced from PostgreSQL via t
 3. Update `deploy_flows.py`
 4. Test locally before deploying
 
-### Database Migrations
+### Database Schema
 
-Using Alembic:
-```bash
-# Create migration
-uv run alembic revision --autogenerate -m "description"
-
-# Apply migration
-uv run alembic upgrade head
-
-# Rollback
-uv run alembic downgrade -1
-```
+Tortoise ORM auto-creates tables on startup in development.
 
 ## Troubleshooting
 

@@ -4,11 +4,9 @@ Authentication API endpoints.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from app.database import get_db
 from app.config import settings
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -65,7 +63,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-async def get_current_user(db: Session = Depends(get_db)):
+async def get_current_user():
     """
     Get the current authenticated user.
 
@@ -90,7 +88,7 @@ async def get_current_user(db: Session = Depends(get_db)):
 @router.post(
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
-async def register(user: UserCreate, db: Session = Depends(get_db)):
+async def register(user: UserCreate):
     """Register a new user."""
     # TODO: Implement user registration
     # 1. Check if user already exists
@@ -106,7 +104,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends()
 ):
     """Login and receive an access token."""
     # TODO: Implement user login

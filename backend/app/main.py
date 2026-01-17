@@ -7,7 +7,9 @@ import traceback
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from tortoise.contrib.fastapi import register_tortoise
 from app.config import settings
+from app.database import TORTOISE_ORM
 from app.api import auth, accounts, transactions, analytics, ai_chat, chat
 
 # Configure logging
@@ -22,6 +24,13 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="AI-powered personal finance tracking application",
+)
+
+register_tortoise(
+    app,
+    config=TORTOISE_ORM,
+    generate_schemas=True,
+    add_exception_handlers=True,
 )
 
 # Configure CORS

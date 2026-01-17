@@ -3,8 +3,6 @@ Analytics API endpoints.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from app.database import get_db
 from app.api.auth import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -38,7 +36,7 @@ class TrendData(BaseModel):
 
 @router.get("/dashboard")
 async def get_dashboard_summary(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user)
 ):
     """Get dashboard summary data."""
     # TODO: Implement dashboard summary
@@ -60,7 +58,6 @@ async def get_spending_by_category(
     start_date: date = Query(...),
     end_date: date = Query(...),
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Get spending breakdown by category for a date range."""
     # TODO: Implement using DuckDB for fast aggregation
@@ -74,7 +71,6 @@ async def get_spending_trends(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Get spending trends over time."""
     # TODO: Implement trend analysis
@@ -85,7 +81,6 @@ async def get_spending_trends(
 async def get_monthly_summary(
     months: int = Query(default=6, ge=1, le=24),
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Get monthly income/expense summary."""
     # TODO: Implement monthly summary using DuckDB
@@ -98,7 +93,6 @@ async def get_top_merchants(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Get top merchants by spending."""
     # TODO: Implement merchant analysis
@@ -107,7 +101,7 @@ async def get_top_merchants(
 
 @router.get("/recurring")
 async def get_recurring_transactions(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user)
 ):
     """Get detected recurring transactions."""
     # TODO: Implement recurring transaction listing
@@ -120,7 +114,6 @@ async def export_data(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Export transaction data in various formats."""
     # TODO: Implement data export using DuckDB

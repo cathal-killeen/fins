@@ -3,8 +3,6 @@ Accounts API endpoints.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.database import get_db
 from app.api.auth import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional
@@ -48,7 +46,7 @@ class AccountResponse(BaseModel):
 
 @router.get("/", response_model=List[AccountResponse])
 async def list_accounts(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user)
 ):
     """List all accounts for the current user."""
     # TODO: Implement account listing
@@ -59,7 +57,6 @@ async def list_accounts(
 async def create_account(
     account: AccountCreate,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Create a new account."""
     # TODO: Implement account creation
@@ -73,7 +70,6 @@ async def create_account(
 async def get_account(
     account_id: str,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Get a specific account by ID."""
     # TODO: Implement account retrieval
@@ -87,7 +83,6 @@ async def update_account(
     account_id: str,
     account: AccountUpdate,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Update an account."""
     # TODO: Implement account update
@@ -101,7 +96,6 @@ async def update_account(
 async def delete_account(
     account_id: str,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Delete an account."""
     # TODO: Implement account deletion
@@ -115,7 +109,6 @@ async def delete_account(
 async def sync_account(
     account_id: str,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Trigger a manual sync for an account."""
     # TODO: Trigger Prefect flow for account sync

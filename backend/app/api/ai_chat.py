@@ -3,8 +3,6 @@ AI-powered chat and insights API endpoints.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.database import get_db
 from app.api.auth import get_current_user
 from app.services.ai_service import process_nl_query, generate_insights
 from pydantic import BaseModel
@@ -35,7 +33,6 @@ class InsightResponse(BaseModel):
 async def chat(
     message: ChatMessage,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """
     Process natural language queries about finances.
@@ -56,7 +53,7 @@ async def chat(
 
 @router.get("/insights", response_model=List[InsightResponse])
 async def get_insights(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user)
 ):
     """
     Get AI-generated financial insights.
@@ -80,7 +77,6 @@ async def get_insights(
 async def suggest_category(
     transaction_id: str,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """Get AI suggestion for a specific transaction's category."""
     # TODO: Implement single transaction categorization

@@ -3,7 +3,6 @@ Transaction service - Database operations for transactions.
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 
@@ -13,10 +12,7 @@ from app.models.transaction import Transaction
 class TransactionService:
     """Service for transaction-related database operations."""
 
-    def __init__(self, db: Session):
-        self.db = db
-
-    def check_duplicates(
+    async def check_duplicates(
         self, account_id: str, transactions: List[Dict[str, Any]]
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
@@ -45,14 +41,14 @@ class TransactionService:
         new_transactions = []
 
         for txn in transactions:
-            if self._is_duplicate(account_id, txn):
+            if await self._is_duplicate(account_id, txn):
                 duplicates.append(txn)
             else:
                 new_transactions.append(txn)
 
         return {"duplicates": duplicates, "new": new_transactions}
 
-    def _is_duplicate(self, account_id: str, txn: Dict[str, Any]) -> bool:
+    async def _is_duplicate(self, account_id: str, txn: Dict[str, Any]) -> bool:
         """
         Check if a single transaction is a duplicate.
 
@@ -75,14 +71,12 @@ class TransactionService:
         date_from = txn_date - timedelta(days=1)
         date_to = txn_date + timedelta(days=1)
 
-        existing = (
-            self.db.query(Transaction)
-            .filter(Transaction.account_id == account_id)
-            .filter(Transaction.transaction_date >= date_from)
-            .filter(Transaction.transaction_date <= date_to)
-            .filter(Transaction.amount == amount)
-            .all()
-        )
+        existing = await Transaction.filter(
+            account_id=account_id,
+            transaction_date__gte=date_from,
+            transaction_date__lte=date_to,
+            amount=amount,
+        ).all()
 
         # Check if any existing transaction has similar description/merchant
         for existing_txn in existing:
@@ -103,7 +97,7 @@ class TransactionService:
 
         return False
 
-    def save_transactions(
+    async def save_transactions(
         self, account_id: str, user_id: str, transactions: List[Dict[str, Any]]
     ) -> int:
         """
@@ -122,38 +116,41 @@ class TransactionService:
 
         saved_count = 0
 
+        transaction_models = []
+        now = datetime.utcnow()
         for txn_data in transactions:
             txn_date = txn_data.get("date")
             if isinstance(txn_date, str):
                 txn_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
 
-            transaction = Transaction(
-                account_id=account_id,
-                user_id=user_id,
-                transaction_date=txn_date,
-                amount=Decimal(str(txn_data.get("amount", 0))),
-                currency=txn_data.get("currency", "USD"),
-                description=txn_data.get("description", ""),
-                merchant_name=txn_data.get("merchant_name"),
-                category=txn_data.get("category"),
-                subcategory=txn_data.get("subcategory"),
-                tags=txn_data.get("tags", []),
-                confidence_score=txn_data.get("confidence"),
-                ai_categorized=txn_data.get("category") is not None,
-                user_verified=False,
-                notes=txn_data.get("notes"),
-                meta=txn_data.get("meta", {}),
+            transaction_models.append(
+                Transaction(
+                    account_id=account_id,
+                    user_id=user_id,
+                    transaction_date=txn_date,
+                    amount=Decimal(str(txn_data.get("amount", 0))),
+                    currency=txn_data.get("currency", "USD"),
+                    description=txn_data.get("description", ""),
+                    merchant_name=txn_data.get("merchant_name"),
+                    category=txn_data.get("category"),
+                    subcategory=txn_data.get("subcategory"),
+                    tags=txn_data.get("tags", []),
+                    confidence_score=txn_data.get("confidence"),
+                    ai_categorized=txn_data.get("category") is not None,
+                    user_verified=False,
+                    notes=txn_data.get("notes"),
+                    meta=txn_data.get("meta", {}),
+                    created_at=now,
+                    updated_at=now,
+                )
             )
-
-            self.db.add(transaction)
             saved_count += 1
 
-        # Commit all transactions at once
-        self.db.commit()
+        await Transaction.bulk_create(transaction_models)
 
         return saved_count
 
-    def get_user_transactions(
+    async def get_user_transactions(
         self,
         user_id: str,
         account_id: Optional[str] = None,
@@ -172,17 +169,15 @@ class TransactionService:
         Returns:
             List of transaction dictionaries
         """
-        query = self.db.query(Transaction).filter(Transaction.user_id == user_id)
+        query = Transaction.filter(user_id=user_id)
 
         if account_id:
-            query = query.filter(Transaction.account_id == account_id)
+            query = query.filter(account_id=account_id)
 
         if since:
-            query = query.filter(Transaction.transaction_date >= since)
+            query = query.filter(transaction_date__gte=since)
 
-        transactions = (
-            query.order_by(Transaction.transaction_date.desc()).limit(limit).all()
-        )
+        transactions = await query.order_by("-transaction_date").limit(limit).all()
 
         return [self._transaction_to_dict(txn) for txn in transactions]
 

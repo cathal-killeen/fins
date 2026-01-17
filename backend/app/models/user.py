@@ -2,45 +2,28 @@
 User model.
 """
 
-from sqlalchemy import Column, String, DateTime
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
-
-from app.database import Base
+from tortoise import fields
+from tortoise.models import Model
 
 
-class User(Base):
+class User(Model):
     """User account model."""
 
-    __tablename__ = "users"
+    id = fields.UUIDField(pk=True)
+    email = fields.CharField(max_length=255, unique=True, index=True)
+    password_hash = fields.CharField(max_length=255)
+    full_name = fields.CharField(max_length=255, null=True)
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
-    full_name = Column(String(255))
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
-    )
+    accounts: fields.ReverseRelation["Account"]
+    transactions: fields.ReverseRelation["Transaction"]
+    categorization_rules: fields.ReverseRelation["CategorizationRule"]
+    budgets: fields.ReverseRelation["Budget"]
+    sync_jobs: fields.ReverseRelation["SyncJob"]
 
-    # Relationships
-    accounts = relationship(
-        "Account", back_populates="user", cascade="all, delete-orphan"
-    )
-    transactions = relationship(
-        "Transaction", back_populates="user", cascade="all, delete-orphan"
-    )
-    categorization_rules = relationship(
-        "CategorizationRule", back_populates="user", cascade="all, delete-orphan"
-    )
-    budgets = relationship(
-        "Budget", back_populates="user", cascade="all, delete-orphan"
-    )
-    sync_jobs = relationship(
-        "SyncJob", back_populates="user", cascade="all, delete-orphan"
-    )
+    class Meta:
+        table = "users"
 
-    def __repr__(self):
+    def __str__(self):
         return f"<User(id={self.id}, email={self.email})>"

@@ -1,5 +1,5 @@
 """
-SQLAlchemy models for the Fins application.
+Tortoise ORM models for the Fins application.
 """
 
 from app.models.user import User

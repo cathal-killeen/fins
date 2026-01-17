@@ -780,8 +780,8 @@ FRONTEND_URL=http://localhost:5173
 ### 3. Initialize Databases
 
 ```bash
-# PostgreSQL
-psql -U postgres -f backend/init_db.sql
+# PostgreSQL (tables auto-created on app startup)
+createdb finance_db
 
 # DuckDB (auto-created on first run)
 python -c "import duckdb; duckdb.connect('analytics.duckdb')"

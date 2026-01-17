@@ -75,8 +75,8 @@ frontend:
 db-init:
     @echo "Creating database..."
     -createdb fins
-    @echo "Running initialization script..."
-    psql -d fins -f backend/init_db.sql
+    @echo "Initializing tables with Tortoise ORM..."
+    cd backend && uv run python -c "code='import asyncio\\nfrom tortoise import Tortoise\\nfrom app.database import TORTOISE_ORM\\n\\nasync def main():\\n    await Tortoise.init(config=TORTOISE_ORM)\\n    await Tortoise.generate_schemas(safe=True)\\n    await Tortoise.close_connections()\\n\\nasyncio.run(main())'; exec(code)"
     @echo "✅ Database initialized"
 
 # Create a development test user matching the hardcoded auth user
@@ -138,40 +138,6 @@ build-backend:
 # Build all Docker images
 build:
     docker compose build
-
-# Run database migrations
-migrate:
-    @echo "Running database migrations..."
-    cd backend && uv run alembic upgrade head
-    @echo "✅ Migrations complete"
-
-# Create a new database migration
-migration message:
-    @echo "Creating new migration: {{message}}"
-    cd backend && uv run alembic revision --autogenerate -m "{{message}}"
-    @echo "✅ Migration created"
-
-# Show current database migration status
-db-status:
-    @echo "Current database status:"
-    cd backend && uv run alembic current
-
-# Show migration history
-db-history:
-    @echo "Migration history:"
-    cd backend && uv run alembic history
-
-# Rollback one migration
-db-rollback:
-    @echo "Rolling back one migration..."
-    cd backend && uv run alembic downgrade -1
-    @echo "✅ Rollback complete"
-
-# Rollback to specific migration
-db-rollback-to revision:
-    @echo "Rolling back to {{revision}}..."
-    cd backend && uv run alembic downgrade {{revision}}
-    @echo "✅ Rollback complete"
 
 # Start a Python REPL with app context
 shell:

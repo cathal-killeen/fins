@@ -2,56 +2,41 @@
 Account model - Bank accounts, credit cards, investments.
 """
 
-from sqlalchemy import Column, String, DateTime, Boolean, Numeric, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
-
-from app.database import Base
+from tortoise import fields
+from tortoise.models import Model
 
 
-class Account(Base):
+class Account(Model):
     """Bank account model."""
 
-    __tablename__ = "accounts"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    id = fields.UUIDField(pk=True)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="accounts", on_delete=fields.CASCADE
     )
 
-    account_type = Column(
-        String(50), nullable=False
-    )  # checking, savings, credit_card, investment, cash
-    institution = Column(String(255))
-    account_name = Column(String(255), nullable=False)
-    account_number_last4 = Column(String(4))
-    currency = Column(String(3), default="USD")
+    account_type = fields.CharField(max_length=50)  # checking, savings, credit_card
+    institution = fields.CharField(max_length=255, null=True)
+    account_name = fields.CharField(max_length=255)
+    account_number_last4 = fields.CharField(max_length=4, null=True)
+    currency = fields.CharField(max_length=3, default="USD")
 
-    current_balance = Column(Numeric(15, 2))
-    available_balance = Column(Numeric(15, 2))
-    credit_limit = Column(Numeric(15, 2))  # For credit cards
+    current_balance = fields.DecimalField(max_digits=15, decimal_places=2, null=True)
+    available_balance = fields.DecimalField(max_digits=15, decimal_places=2, null=True)
+    credit_limit = fields.DecimalField(max_digits=15, decimal_places=2, null=True)
 
-    is_active = Column(Boolean, default=True, nullable=False)
-    last_synced_at = Column(DateTime)
-    sync_error = Column(Text)
+    is_active = fields.BooleanField(default=True)
+    last_synced_at = fields.DatetimeField(null=True)
+    sync_error = fields.TextField(null=True)
 
-    meta = Column(JSONB, default=dict)  # renamed from 'metadata' (reserved)
+    meta = fields.JSONField(default=dict)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
-    )
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
 
-    # Relationships
-    user = relationship("User", back_populates="accounts")
-    transactions = relationship(
-        "Transaction", back_populates="account", cascade="all, delete-orphan"
-    )
+    transactions: fields.ReverseRelation["Transaction"]
 
-    def __repr__(self):
+    class Meta:
+        table = "accounts"
+
+    def __str__(self):
         return f"<Account(id={self.id}, name={self.account_name}, type={self.account_type})>"

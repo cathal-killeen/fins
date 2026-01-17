@@ -12,7 +12,6 @@ Processing stages:
 """
 
 from typing import Dict, Any, List, Optional
-from sqlalchemy.orm import Session
 
 from app.utils.csv_parser import parse_csv_file, extract_statement_metadata
 from app.utils.pdf_parser import parse_pdf_file
@@ -70,11 +69,10 @@ class ProcessingStatus:
 class StatementProcessor:
     """Main orchestrator for statement processing pipeline."""
 
-    def __init__(self, db: Session):
-        self.db = db
-        self.account_service = AccountService(db)
-        self.transaction_service = TransactionService(db)
-        self.sync_job_service = SyncJobService(db)
+    def __init__(self):
+        self.account_service = AccountService()
+        self.transaction_service = TransactionService()
+        self.sync_job_service = SyncJobService()
 
     async def process_statement(
         self, file_path: str, file_type: str, job_id: str, user_id: str
@@ -292,12 +290,12 @@ class StatementProcessor:
 
     async def _get_user_accounts(self, user_id: str) -> List[Dict[str, Any]]:
         """Get user's existing accounts."""
-        return self.account_service.get_user_accounts(user_id)
+        return await self.account_service.get_user_accounts(user_id)
 
     async def _create_account(self, account_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create new account."""
         user_id = account_data.pop("user_id", None)
-        return self.account_service.create_account(user_id, account_data)
+        return await self.account_service.create_account(user_id, account_data)
 
     async def _check_duplicates(
         self, account_id: str, transactions: List[Dict[str, Any]]
@@ -308,7 +306,7 @@ class StatementProcessor:
         Returns:
             {'duplicates': [...], 'new': [...]}
         """
-        return self.transaction_service.check_duplicates(account_id, transactions)
+        return await self.transaction_service.check_duplicates(account_id, transactions)
 
     async def _save_transactions(
         self, account_id: str, transactions: List[Dict[str, Any]]
@@ -320,18 +318,18 @@ class StatementProcessor:
             Number of transactions saved
         """
         # Get user_id from account
-        account = self.db.query(Account).filter(Account.id == account_id).first()
+        account = await Account.filter(id=account_id).first()
         if not account:
             raise ValueError(f"Account {account_id} not found")
 
         user_id = str(account.user_id)
-        return self.transaction_service.save_transactions(
+        return await self.transaction_service.save_transactions(
             account_id, user_id, transactions
         )
 
     async def _get_job_status(self, job_id: str) -> ProcessingStatus:
         """Retrieve job status from database."""
-        job = self.sync_job_service.get_job(job_id)
+        job = await self.sync_job_service.get_job(job_id)
 
         if not job:
             # Create mock status if job doesn't exist

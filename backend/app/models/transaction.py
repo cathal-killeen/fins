@@ -2,82 +2,53 @@
 Transaction model.
 """
 
-from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Boolean,
-    Numeric,
-    Text,
-    Date,
-    Float,
-    ForeignKey,
-    Index,
-)
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
-from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
-
-from app.database import Base
+from tortoise import fields
+from tortoise.models import Model
 
 
-class Transaction(Base):
+class Transaction(Model):
     """Financial transaction model."""
 
-    __tablename__ = "transactions"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    account_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("accounts.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    id = fields.UUIDField(pk=True)
+    account = fields.ForeignKeyField(
+        "models.Account", related_name="transactions", on_delete=fields.CASCADE
     )
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    user = fields.ForeignKeyField(
+        "models.User", related_name="transactions", on_delete=fields.CASCADE
     )
 
-    transaction_date = Column(Date, nullable=False, index=True)
-    post_date = Column(Date)
-    amount = Column(Numeric(15, 2), nullable=False)
-    currency = Column(String(3), default="USD")
+    transaction_date = fields.DateField()
+    post_date = fields.DateField(null=True)
+    amount = fields.DecimalField(max_digits=15, decimal_places=2)
+    currency = fields.CharField(max_length=3, default="USD")
 
-    description = Column(Text, nullable=False)
-    merchant_name = Column(String(255), index=True)
+    description = fields.TextField()
+    merchant_name = fields.CharField(max_length=255, null=True)
 
-    category = Column(String(100), index=True)
-    subcategory = Column(String(100))
-    tags = Column(ARRAY(Text), default=list)
+    category = fields.CharField(max_length=100, null=True)
+    subcategory = fields.CharField(max_length=100, null=True)
+    tags = fields.JSONField(default=list)
 
-    is_recurring = Column(Boolean, default=False)
-    recurring_group_id = Column(UUID(as_uuid=True))
+    is_recurring = fields.BooleanField(default=False)
+    recurring_group_id = fields.UUIDField(null=True)
 
-    confidence_score = Column(Float)  # AI confidence (0-1)
-    ai_categorized = Column(Boolean, default=False)
-    user_verified = Column(Boolean, default=False)
+    confidence_score = fields.FloatField(null=True)  # AI confidence (0-1)
+    ai_categorized = fields.BooleanField(default=False)
+    user_verified = fields.BooleanField(default=False)
 
-    notes = Column(Text)
-    meta = Column(JSONB, default=dict)  # renamed from 'metadata' (reserved)
+    notes = fields.TextField(null=True)
+    meta = fields.JSONField(default=dict)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
-    )
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
 
-    # Relationships
-    account = relationship("Account", back_populates="transactions")
-    user = relationship("User", back_populates="transactions")
+    class Meta:
+        table = "transactions"
+        indexes = [
+            ("transaction_date",),
+            ("account", "transaction_date"),
+            ("user", "transaction_date"),
+        ]
 
-    # Indexes for common queries
-    __table_args__ = (
-        Index("idx_transactions_date_desc", transaction_date.desc()),
-        Index("idx_transactions_account_date", account_id, transaction_date.desc()),
-        Index("idx_transactions_user_date", user_id, transaction_date.desc()),
-    )
-
-    def __repr__(self):
+    def __str__(self):
         return f"<Transaction(id={self.id}, date={self.transaction_date}, amount={self.amount}, merchant={self.merchant_name})>"

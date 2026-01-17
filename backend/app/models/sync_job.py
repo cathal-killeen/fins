@@ -2,49 +2,35 @@
 Sync job model - Track processing jobs (file uploads, syncs, etc.).
 """
 
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
-
-from app.database import Base
+from tortoise import fields
+from tortoise.models import Model
 
 
-class SyncJob(Base):
+class SyncJob(Model):
     """Processing job tracking model."""
 
-    __tablename__ = "sync_jobs"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    id = fields.UUIDField(pk=True)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="sync_jobs", on_delete=fields.CASCADE
     )
 
-    job_type = Column(
-        String(50), nullable=False
-    )  # account_sync, categorization, analytics, file_upload
-    prefect_flow_run_id = Column(String(255))
+    job_type = fields.CharField(max_length=50)
+    prefect_flow_run_id = fields.CharField(max_length=255, null=True)
 
-    status = Column(
-        String(50), nullable=False
-    )  # pending, running, completed, failed, awaiting_confirmation
-    stage = Column(String(50))  # current processing stage
-    progress = Column(JSONB)  # progress information (percentage, message, etc.)
+    status = fields.CharField(max_length=50)
+    stage = fields.CharField(max_length=50, null=True)
+    progress = fields.JSONField(null=True)
 
-    started_at = Column(DateTime)
-    completed_at = Column(DateTime)
+    started_at = fields.DatetimeField(null=True)
+    completed_at = fields.DatetimeField(null=True)
 
-    error_message = Column(Text)
-    meta = Column(JSONB, default=dict)  # renamed from 'metadata' (reserved)
+    error_message = fields.TextField(null=True)
+    meta = fields.JSONField(default=dict)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = fields.DatetimeField(auto_now_add=True)
 
-    # Relationships
-    user = relationship("User", back_populates="sync_jobs")
+    class Meta:
+        table = "sync_jobs"
 
-    def __repr__(self):
+    def __str__(self):
         return f"<SyncJob(id={self.id}, type={self.job_type}, status={self.status})>"

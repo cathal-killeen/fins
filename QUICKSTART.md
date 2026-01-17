@@ -45,6 +45,8 @@ LLM_API_KEY=your-gemini-api-key-here
 just db-init
 ```
 
+This creates the database and applies the Tortoise ORM schema.
+
 ### 3. Install Dependencies
 
 ```bash
@@ -99,7 +101,7 @@ cp .env.example .env
 
 # Initialize database
 createdb fins
-psql -d fins -f init_db.sql
+# Tables are created automatically on app startup
 
 # Start backend
 uv run uvicorn app.main:app --reload

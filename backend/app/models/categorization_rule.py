@@ -2,59 +2,33 @@
 Categorization rules model - AI learned patterns.
 """
 
-from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Float,
-    Integer,
-    ForeignKey,
-    UniqueConstraint,
-)
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
-
-from app.database import Base
+from tortoise import fields
+from tortoise.models import Model
 
 
-class CategorizationRule(Base):
+class CategorizationRule(Model):
     """AI categorization rules model."""
 
-    __tablename__ = "categorization_rules"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    id = fields.UUIDField(pk=True)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="categorization_rules", on_delete=fields.CASCADE
     )
 
-    pattern_type = Column(
-        String(50), nullable=False
-    )  # merchant_exact, merchant_contains, description_pattern
-    pattern_value = Column(String, nullable=False)
+    pattern_type = fields.CharField(max_length=50)
+    pattern_value = fields.TextField()
 
-    category = Column(String(100), nullable=False)
-    subcategory = Column(String(100))
+    category = fields.CharField(max_length=100)
+    subcategory = fields.CharField(max_length=100, null=True)
 
-    confidence_score = Column(Float, default=1.0)
-    usage_count = Column(Integer, default=0)
-    last_used_at = Column(DateTime)
+    confidence_score = fields.FloatField(default=1.0)
+    usage_count = fields.IntField(default=0)
+    last_used_at = fields.DatetimeField(null=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = fields.DatetimeField(auto_now_add=True)
 
-    # Relationships
-    user = relationship("User", back_populates="categorization_rules")
+    class Meta:
+        table = "categorization_rules"
+        unique_together = (("user", "pattern_type", "pattern_value"),)
 
-    # Unique constraint
-    __table_args__ = (
-        UniqueConstraint(
-            "user_id", "pattern_type", "pattern_value", name="uq_user_pattern"
-        ),
-    )
-
-    def __repr__(self):
+    def __str__(self):
         return f"<CategorizationRule(id={self.id}, pattern={self.pattern_value}, category={self.category})>"

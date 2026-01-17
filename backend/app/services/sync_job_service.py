@@ -3,8 +3,8 @@ Sync job service - Database operations for job tracking.
 """
 
 from typing import Optional, Dict, Any
-from sqlalchemy.orm import Session
 from datetime import datetime
+import uuid
 
 from app.models.sync_job import SyncJob
 
@@ -12,10 +12,7 @@ from app.models.sync_job import SyncJob
 class SyncJobService:
     """Service for sync job tracking operations."""
 
-    def __init__(self, db: Session):
-        self.db = db
-
-    def create_job(
+    async def create_job(
         self, user_id: str, job_id: str, job_type: str = "file_upload"
     ) -> Dict[str, Any]:
         """
@@ -29,8 +26,8 @@ class SyncJobService:
         Returns:
             Created job dictionary
         """
-        job = SyncJob(
-            id=job_id,
+        job = await SyncJob.create(
+            id=uuid.UUID(job_id),
             user_id=user_id,
             job_type=job_type,
             status="pending",
@@ -40,13 +37,9 @@ class SyncJobService:
             meta={},
         )
 
-        self.db.add(job)
-        self.db.commit()
-        self.db.refresh(job)
-
         return self._job_to_dict(job)
 
-    def get_job(
+    async def get_job(
         self, job_id: str, user_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
@@ -59,16 +52,16 @@ class SyncJobService:
         Returns:
             Job dictionary or None
         """
-        query = self.db.query(SyncJob).filter(SyncJob.id == job_id)
+        query = SyncJob.filter(id=job_id)
 
         if user_id:
-            query = query.filter(SyncJob.user_id == user_id)
+            query = query.filter(user_id=user_id)
 
-        job = query.first()
+        job = await query.first()
 
         return self._job_to_dict(job) if job else None
 
-    def update_job(
+    async def update_job(
         self,
         job_id: str,
         status: Optional[str] = None,
@@ -91,7 +84,7 @@ class SyncJobService:
         Returns:
             Updated job dictionary or None
         """
-        job = self.db.query(SyncJob).filter(SyncJob.id == job_id).first()
+        job = await SyncJob.filter(id=job_id).first()
 
         if not job:
             return None
@@ -118,8 +111,7 @@ class SyncJobService:
         if status in ["completed", "failed"]:
             job.completed_at = datetime.utcnow()
 
-        self.db.commit()
-        self.db.refresh(job)
+        await job.save()
 
         return self._job_to_dict(job)
 
