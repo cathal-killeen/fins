@@ -65,34 +65,26 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-):
-    """Get the current authenticated user."""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        email: str = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-        token_data = TokenData(email=email)
-    except JWTError:
-        raise credentials_exception
+async def get_current_user(db: Session = Depends(get_db)):
+    """
+    Get the current authenticated user.
 
-    # TODO: Fetch user from database
-    # user = db.query(User).filter(User.email == token_data.email).first()
-    # if user is None:
-    #     raise credentials_exception
-    # return user
+    TEMPORARY: Authentication is disabled for development.
+    Returns a default test user without requiring token validation.
+    """
+    # Default test user for development (no authentication required)
+    default_user_id = "00000000-0000-0000-0000-000000000001"
+    default_email = "test@fins.dev"
 
-    # Placeholder return
-    return {"email": token_data.email, "id": "placeholder-user-id"}
+    # TODO: Re-enable authentication for production
+    # This is a temporary bypass to allow testing without implementing
+    # full authentication flow in the frontend.
+
+    return {
+        "id": default_user_id,
+        "email": default_email,
+        "full_name": "Test User"
+    }
 
 
 @router.post(
