@@ -30,6 +30,13 @@ LLM_API_KEY=your-anthropic-api-key-here
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4-turbo-preview
 LLM_API_KEY=your-openai-api-key-here
+
+# For Gemini:
+LLM_PROVIDER=google
+LLM_MODEL=gemini-1.5-pro-latest
+LLM_API_KEY=your-gemini-api-key-here
+
+
 ```
 
 ### 2. Initialize Database
@@ -68,7 +75,7 @@ cp .env.example .env
 ### 2. Start Services
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Access the application:

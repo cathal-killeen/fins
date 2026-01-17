@@ -69,7 +69,7 @@ LLM_API_KEY=your-openai-api-key
 
 4. Start the services:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 5. Access the application:

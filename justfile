@@ -22,7 +22,7 @@ dev:
 
 # Start all services with Docker Compose
 up:
-    docker-compose up -d
+    docker compose up -d
     @echo "✅ Services started"
     @echo "Frontend: http://localhost:5173"
     @echo "Backend: http://localhost:8000"
@@ -30,8 +30,23 @@ up:
 
 # Stop all Docker services
 down:
-    docker-compose down
+    docker compose down
     @echo "✅ Services stopped"
+
+# Start only PostgreSQL database in Docker
+db-up:
+    docker compose up postgres -d
+    @echo "✅ PostgreSQL started"
+    @echo "Database: postgresql://postgres:postgres@localhost:5432/fins"
+    @echo ""
+    @echo "You can now run backend and frontend separately:"
+    @echo "  just backend  # Run backend locally"
+    @echo "  just frontend # Run frontend locally"
+
+# Stop PostgreSQL database
+db-down:
+    docker compose stop postgres
+    @echo "✅ PostgreSQL stopped"
 
 # Clean up build artifacts and caches
 clean:
@@ -116,7 +131,7 @@ build-backend:
 
 # Build all Docker images
 build:
-    docker-compose build
+    docker compose build
 
 # Run database migrations
 migrate:

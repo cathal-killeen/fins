@@ -96,7 +96,7 @@ async def upload_statement(
         # Create job in database
         sync_job_service = SyncJobService(db)
         sync_job_service.create_job(
-            user_id=str(current_user.id), job_id=job_id, job_type="file_upload"
+            user_id=str(current_user["id"]), job_id=job_id, job_type="file_upload"
         )
 
         # Start background processing
@@ -105,7 +105,7 @@ async def upload_statement(
             file_path,
             file_type,
             job_id,
-            str(current_user.id),
+            str(current_user["id"]),
             db,
         )
 
@@ -133,7 +133,7 @@ async def get_processing_status(
     """
     # Get job status from database
     sync_job_service = SyncJobService(db)
-    job = sync_job_service.get_job(job_id, user_id=str(current_user.id))
+    job = sync_job_service.get_job(job_id, user_id=str(current_user["id"]))
 
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
@@ -166,7 +166,7 @@ async def confirm_account(
 
     # Check if job exists
     sync_job_service = SyncJobService(db)
-    job = sync_job_service.get_job(job_id, user_id=str(current_user.id))
+    job = sync_job_service.get_job(job_id, user_id=str(current_user["id"]))
 
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
@@ -185,7 +185,7 @@ async def confirm_account(
         statement_metadata = metadata.get("statement_metadata", {})
 
         new_account_data = {
-            "user_id": str(current_user.id),
+            "user_id": str(current_user["id"]),
             "account_name": request.new_account_name,
             "account_type": statement_metadata.get("account_type", "unknown"),
             "institution": statement_metadata.get("institution"),
