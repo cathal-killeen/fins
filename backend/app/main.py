@@ -1,6 +1,7 @@
 """
 Main FastAPI application.
 """
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
@@ -28,7 +29,7 @@ async def root():
     return {
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "status": "healthy"
+        "status": "healthy",
     }
 
 
@@ -38,14 +39,16 @@ async def health():
     return {
         "status": "healthy",
         "database": "connected",  # TODO: Add actual DB health check
-        "ai_service": "available" if settings.ANTHROPIC_API_KEY else "not configured"
+        "ai_service": "available" if settings.ANTHROPIC_API_KEY else "not configured",
     }
 
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(accounts.router, prefix="/api/accounts", tags=["Accounts"])
-app.include_router(transactions.router, prefix="/api/transactions", tags=["Transactions"])
+app.include_router(
+    transactions.router, prefix="/api/transactions", tags=["Transactions"]
+)
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(ai_chat.router, prefix="/api/ai", tags=["AI"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
@@ -53,9 +56,5 @@ app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.DEBUG
-    )
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)

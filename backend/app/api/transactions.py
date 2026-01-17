@@ -1,6 +1,7 @@
 """
 Transactions API endpoints.
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -60,39 +61,40 @@ async def list_transactions(
     end_date: Optional[date] = None,
     limit: int = Query(default=100, le=500),
     offset: int = 0,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """List transactions with optional filters."""
     # TODO: Implement transaction listing with filters
     return []
 
 
-@router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_transaction(
     transaction: TransactionCreate,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Create a new transaction manually."""
     # TODO: Implement transaction creation
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Transaction creation not yet implemented"
+        detail="Transaction creation not yet implemented",
     )
 
 
 @router.get("/{transaction_id}", response_model=TransactionResponse)
 async def get_transaction(
     transaction_id: str,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Get a specific transaction by ID."""
     # TODO: Implement transaction retrieval
     raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Transaction not found"
+        status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found"
     )
 
 
@@ -100,28 +102,28 @@ async def get_transaction(
 async def update_transaction(
     transaction_id: str,
     transaction: TransactionUpdate,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Update a transaction (e.g., change category, add notes)."""
     # TODO: Implement transaction update
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Transaction update not yet implemented"
+        detail="Transaction update not yet implemented",
     )
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_transaction(
     transaction_id: str,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Delete a transaction."""
     # TODO: Implement transaction deletion
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Transaction deletion not yet implemented"
+        detail="Transaction deletion not yet implemented",
     )
 
 
@@ -129,8 +131,8 @@ async def delete_transaction(
 async def import_transactions(
     file: UploadFile = File(...),
     account_id: str = Query(...),
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Import transactions from a CSV file."""
     # TODO: Implement CSV import
@@ -140,14 +142,13 @@ async def import_transactions(
     # 4. Trigger categorization flow
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Transaction import not yet implemented"
+        detail="Transaction import not yet implemented",
     )
 
 
 @router.post("/categorize")
 async def trigger_categorization(
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Trigger AI categorization for uncategorized transactions."""
     # TODO: Trigger Prefect categorization flow

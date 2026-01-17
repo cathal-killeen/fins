@@ -1,6 +1,7 @@
 """
 Database connection and session management.
 """
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -42,6 +43,7 @@ def get_duckdb_connection():
 def get_postgres_connection():
     """Get raw PostgreSQL connection."""
     import psycopg2
+
     # Parse DATABASE_URL to get connection params
     # This is a simple implementation - consider using urllib.parse for production
     return psycopg2.connect(settings.DATABASE_URL)

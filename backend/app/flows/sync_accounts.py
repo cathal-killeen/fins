@@ -1,6 +1,7 @@
 """
 Daily account synchronization workflow.
 """
+
 from prefect import flow, task
 from prefect.tasks import task_input_hash
 from datetime import timedelta
@@ -12,7 +13,7 @@ import asyncio
     retries=3,
     retry_delay_seconds=60,
     cache_key_fn=task_input_hash,
-    cache_expiration=timedelta(hours=1)
+    cache_expiration=timedelta(hours=1),
 )
 async def sync_single_account(account_id: str) -> Dict[str, Any]:
     """
@@ -24,11 +25,7 @@ async def sync_single_account(account_id: str) -> Dict[str, Any]:
     print(f"Syncing account {account_id}")
 
     # Placeholder return
-    return {
-        'account_id': account_id,
-        'new_transactions': 0,
-        'success': True
-    }
+    return {"account_id": account_id, "new_transactions": 0, "success": True}
 
 
 @task
@@ -84,20 +81,16 @@ async def daily_account_sync_flow(user_id: str = None):
 
     if not accounts:
         print("No accounts to sync")
-        return {
-            'total_accounts': 0,
-            'successful_syncs': 0,
-            'new_transactions': 0
-        }
+        return {"total_accounts": 0, "successful_syncs": 0, "new_transactions": 0}
 
     # Sync all accounts in parallel
     sync_results = await sync_single_account.map(
-        [account['id'] for account in accounts]
+        [account["id"] for account in accounts]
     )
 
     # Deduplicate transactions for each account
     await deduplicate_transactions.map(
-        [(account['user_id'], account['id']) for account in accounts]
+        [(account["user_id"], account["id"]) for account in accounts]
     )
 
     # Get all new uncategorized transactions
@@ -105,14 +98,14 @@ async def daily_account_sync_flow(user_id: str = None):
 
     if uncategorized:
         print(f"Found {len(uncategorized)} uncategorized transactions")
-        await queue_for_categorization([t['id'] for t in uncategorized])
+        await queue_for_categorization([t["id"] for t in uncategorized])
 
     # Log summary
-    total_new = sum(r['new_transactions'] for r in sync_results if r['success'])
+    total_new = sum(r["new_transactions"] for r in sync_results if r["success"])
     print(f"✅ Sync complete: {total_new} new transactions")
 
     return {
-        'total_accounts': len(accounts),
-        'successful_syncs': sum(1 for r in sync_results if r['success']),
-        'new_transactions': total_new
+        "total_accounts": len(accounts),
+        "successful_syncs": sum(1 for r in sync_results if r["success"]),
+        "new_transactions": total_new,
     }

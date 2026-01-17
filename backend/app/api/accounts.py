@@ -1,6 +1,7 @@
 """
 Accounts API endpoints.
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -47,8 +48,7 @@ class AccountResponse(BaseModel):
 
 @router.get("/", response_model=List[AccountResponse])
 async def list_accounts(
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """List all accounts for the current user."""
     # TODO: Implement account listing
@@ -58,28 +58,27 @@ async def list_accounts(
 @router.post("/", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
 async def create_account(
     account: AccountCreate,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Create a new account."""
     # TODO: Implement account creation
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Account creation not yet implemented"
+        detail="Account creation not yet implemented",
     )
 
 
 @router.get("/{account_id}", response_model=AccountResponse)
 async def get_account(
     account_id: str,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Get a specific account by ID."""
     # TODO: Implement account retrieval
     raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Account not found"
+        status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
     )
 
 
@@ -87,36 +86,36 @@ async def get_account(
 async def update_account(
     account_id: str,
     account: AccountUpdate,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Update an account."""
     # TODO: Implement account update
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Account update not yet implemented"
+        detail="Account update not yet implemented",
     )
 
 
 @router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_account(
     account_id: str,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Delete an account."""
     # TODO: Implement account deletion
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Account deletion not yet implemented"
+        detail="Account deletion not yet implemented",
     )
 
 
 @router.post("/{account_id}/sync")
 async def sync_account(
     account_id: str,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Trigger a manual sync for an account."""
     # TODO: Trigger Prefect flow for account sync

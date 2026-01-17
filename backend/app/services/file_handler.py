@@ -1,6 +1,7 @@
 """
 File upload handling service.
 """
+
 import os
 import uuid
 import magic
@@ -40,30 +41,30 @@ def validate_file_type(file: UploadFile) -> str:
     file_type = mime.from_buffer(file_header)
 
     # Check if it's a supported type
-    if file_type == 'text/csv' or file_type == 'text/plain':
+    if file_type == "text/csv" or file_type == "text/plain":
         # Additional check for CSV
-        if file.filename and file.filename.endswith('.csv'):
-            return 'csv'
+        if file.filename and file.filename.endswith(".csv"):
+            return "csv"
         # Check if content looks like CSV
         try:
-            content = file_header.decode('utf-8')
-            if ',' in content or ';' in content:
-                return 'csv'
+            content = file_header.decode("utf-8")
+            if "," in content or ";" in content:
+                return "csv"
         except:
             pass
 
-    if file_type == 'application/pdf':
-        return 'pdf'
+    if file_type == "application/pdf":
+        return "pdf"
 
     # Fallback to filename extension
     if file.filename:
-        ext = file.filename.lower().split('.')[-1]
+        ext = file.filename.lower().split(".")[-1]
         if ext in settings.SUPPORTED_FILE_TYPES:
             return ext
 
     raise HTTPException(
         status_code=400,
-        detail=f"Unsupported file type: {file_type}. Please upload CSV or PDF files."
+        detail=f"Unsupported file type: {file_type}. Please upload CSV or PDF files.",
     )
 
 
@@ -81,7 +82,7 @@ def validate_file_size(file: UploadFile):
     if file_size > settings.MAX_UPLOAD_SIZE:
         raise HTTPException(
             status_code=400,
-            detail=f"File too large. Maximum size is {settings.MAX_UPLOAD_SIZE / (1024*1024):.1f}MB"
+            detail=f"File too large. Maximum size is {settings.MAX_UPLOAD_SIZE / (1024 * 1024):.1f}MB",
         )
 
     return file_size
@@ -107,7 +108,7 @@ async def save_uploaded_file(file: UploadFile, job_id: str) -> tuple[str, int, s
 
     # Save file
     content = await file.read()
-    with open(file_path, 'wb') as f:
+    with open(file_path, "wb") as f:
         f.write(content)
 
     return str(file_path), file_size, file_type

@@ -4,6 +4,7 @@ Deploy Prefect flows to Prefect Cloud.
 Usage:
     python deploy_flows.py
 """
+
 import asyncio
 from app.flows.sync_accounts import daily_account_sync_flow
 from app.flows.categorize_transactions import categorization_flow
@@ -23,7 +24,7 @@ async def deploy_all_flows():
         name="daily-account-sync",
         cron="0 2 * * *",
         tags=["sync", "production"],
-        description="Sync transactions from bank APIs daily"
+        description="Sync transactions from bank APIs daily",
     )
 
     # Deploy AI categorization (runs every 6 hours)
@@ -32,7 +33,7 @@ async def deploy_all_flows():
         name="ai-categorization",
         cron="0 */6 * * *",
         tags=["ai", "production"],
-        description="Categorize transactions using AI"
+        description="Categorize transactions using AI",
     )
 
     # Deploy analytics update (runs every 6 hours)
@@ -41,7 +42,7 @@ async def deploy_all_flows():
         name="analytics-update",
         cron="0 */6 * * *",
         tags=["analytics", "production"],
-        description="Sync data to DuckDB for analytics"
+        description="Sync data to DuckDB for analytics",
     )
 
     # Deploy recurring detection (runs weekly on Sundays at 3 AM)
@@ -50,7 +51,7 @@ async def deploy_all_flows():
         name="recurring-detection",
         cron="0 3 * * 0",
         tags=["ml", "production"],
-        description="Detect recurring transaction patterns"
+        description="Detect recurring transaction patterns",
     )
 
     # Deploy budget alerts (runs daily at 8 AM)
@@ -59,7 +60,7 @@ async def deploy_all_flows():
         name="budget-alerts",
         cron="0 8 * * *",
         tags=["alerts", "production"],
-        description="Check budgets and send alerts"
+        description="Check budgets and send alerts",
     )
 
     print("\n✅ All flows deployed successfully!")

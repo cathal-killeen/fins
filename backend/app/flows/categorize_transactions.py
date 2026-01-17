@@ -1,18 +1,24 @@
 """
 AI-powered transaction categorization workflow.
 """
+
 from prefect import flow, task
 import json
 from typing import List, Dict, Any
 
 
 @task(retries=2, retry_delay_seconds=30)
-async def categorize_batch(transaction_batch: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+async def categorize_batch(
+    transaction_batch: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
     """
     Categorize a batch of transactions using LLM.
     Batch size: 20-50 transactions for cost efficiency.
     """
-    from app.services.categorization import check_categorization_rules, create_categorization_rule
+    from app.services.categorization import (
+        check_categorization_rules,
+        create_categorization_rule,
+    )
     from app.services.ai_service import llm_service
 
     # Check for learned patterns first
@@ -20,15 +26,19 @@ async def categorize_batch(transaction_batch: List[Dict[str, Any]]) -> List[Dict
     needs_ai = []
 
     for txn in transaction_batch:
-        rule = await check_categorization_rules(txn.get('merchant_name'), txn.get('description'))
-        if rule and rule.get('confidence_score', 0) > 0.8:
-            categorized_by_rules.append({
-                'id': txn['id'],
-                'category': rule['category'],
-                'subcategory': rule.get('subcategory'),
-                'confidence': rule['confidence_score'],
-                'method': 'rule'
-            })
+        rule = await check_categorization_rules(
+            txn.get("merchant_name"), txn.get("description")
+        )
+        if rule and rule.get("confidence_score", 0) > 0.8:
+            categorized_by_rules.append(
+                {
+                    "id": txn["id"],
+                    "category": rule["category"],
+                    "subcategory": rule.get("subcategory"),
+                    "confidence": rule["confidence_score"],
+                    "method": "rule",
+                }
+            )
         else:
             needs_ai.append(txn)
 
@@ -48,19 +58,22 @@ async def categorize_batch(transaction_batch: List[Dict[str, Any]]) -> List[Dict
 @task
 async def save_categorizations(categorization_results: List[Dict[str, Any]]):
     """Save categorization results to database"""
-    from app.services.categorization import update_transaction_category, create_categorization_rule
+    from app.services.categorization import (
+        update_transaction_category,
+        create_categorization_rule,
+    )
 
     for result in categorization_results:
         await update_transaction_category(
-            transaction_id=result['id'],
-            category=result['category'],
-            subcategory=result.get('subcategory'),
-            confidence=result['confidence'],
-            ai_categorized=(result.get('method') == 'ai')
+            transaction_id=result["id"],
+            category=result["category"],
+            subcategory=result.get("subcategory"),
+            confidence=result["confidence"],
+            ai_categorized=(result.get("method") == "ai"),
         )
 
         # Learn from high-confidence AI categorizations
-        if result.get('method') == 'ai' and result['confidence'] > 0.9:
+        if result.get("method") == "ai" and result["confidence"] > 0.9:
             await create_categorization_rule(result)
 
 
@@ -71,16 +84,34 @@ def build_categorization_prompt(transactions: List[Dict[str, Any]]) -> str:
 
     categories = {
         "Income": ["Salary", "Freelance", "Investment Income", "Gifts", "Refunds"],
-        "Housing": ["Rent/Mortgage", "Utilities", "Internet", "Home Maintenance", "Furniture"],
-        "Transportation": ["Gas", "Public Transit", "Ride Share", "Car Maintenance", "Parking"],
+        "Housing": [
+            "Rent/Mortgage",
+            "Utilities",
+            "Internet",
+            "Home Maintenance",
+            "Furniture",
+        ],
+        "Transportation": [
+            "Gas",
+            "Public Transit",
+            "Ride Share",
+            "Car Maintenance",
+            "Parking",
+        ],
         "Food": ["Groceries", "Restaurants", "Coffee Shops", "Fast Food", "Delivery"],
         "Shopping": ["Clothing", "Electronics", "Home Goods", "Personal Care", "Books"],
-        "Entertainment": ["Streaming Services", "Movies", "Gaming", "Hobbies", "Events"],
+        "Entertainment": [
+            "Streaming Services",
+            "Movies",
+            "Gaming",
+            "Hobbies",
+            "Events",
+        ],
         "Healthcare": ["Medical", "Dental", "Pharmacy", "Health Insurance", "Fitness"],
         "Financial": ["Bank Fees", "Interest", "Investments", "Insurance", "Taxes"],
         "Personal": ["Haircut", "Spa", "Subscriptions", "Gifts", "Education"],
         "Travel": ["Flights", "Hotels", "Vacation", "Travel Insurance"],
-        "Other": ["Uncategorized"]
+        "Other": ["Uncategorized"],
     }
 
     prompt = f"""You are a financial transaction categorization expert. Analyze these transactions and categorize each one.
@@ -137,7 +168,7 @@ async def categorization_flow():
     # Process in batches of 30
     batch_size = 30
     batches = [
-        uncategorized[i:i+batch_size]
+        uncategorized[i : i + batch_size]
         for i in range(0, len(uncategorized), batch_size)
     ]
 
@@ -150,7 +181,4 @@ async def categorization_flow():
 
     print(f"✅ Categorized {len(all_results)} transactions")
 
-    return {
-        'total_categorized': len(all_results),
-        'batches_processed': len(batches)
-    }
+    return {"total_categorized": len(all_results), "batches_processed": len(batches)}

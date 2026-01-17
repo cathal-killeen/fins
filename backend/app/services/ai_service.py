@@ -1,6 +1,7 @@
 """
 Generic AI service supporting multiple LLM providers via LiteLLM.
 """
+
 from litellm import completion
 from app.config import settings
 import json
@@ -26,12 +27,12 @@ class LLMService:
 
         # Map provider to model format
         provider_map = {
-            'anthropic': model if model.startswith('claude') else f'claude-{model}',
-            'openai': model if '/' not in model else model,
-            'azure': f'azure/{model}',
-            'bedrock': f'bedrock/{model}',
-            'vertex_ai': f'vertex_ai/{model}',
-            'ollama': f'ollama/{model}',
+            "anthropic": model if model.startswith("claude") else f"claude-{model}",
+            "openai": model if "/" not in model else model,
+            "azure": f"azure/{model}",
+            "bedrock": f"bedrock/{model}",
+            "vertex_ai": f"vertex_ai/{model}",
+            "ollama": f"ollama/{model}",
         }
 
         return provider_map.get(self.provider, model)
@@ -39,9 +40,9 @@ class LLMService:
     def _get_api_key(self) -> Optional[str]:
         """Get API key for the configured provider."""
         # Check provider-specific env vars first
-        if self.provider == 'anthropic' and settings.ANTHROPIC_API_KEY:
+        if self.provider == "anthropic" and settings.ANTHROPIC_API_KEY:
             return settings.ANTHROPIC_API_KEY
-        elif self.provider == 'openai' and settings.OPENAI_API_KEY:
+        elif self.provider == "openai" and settings.OPENAI_API_KEY:
             return settings.OPENAI_API_KEY
 
         # Fall back to generic LLM_API_KEY
@@ -52,7 +53,7 @@ class LLMService:
         messages: List[Dict[str, str]],
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        response_format: Optional[Dict[str, Any]] = None
+        response_format: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Get completion from LLM.
@@ -67,23 +68,23 @@ class LLMService:
             The text response from the LLM
         """
         kwargs = {
-            'model': self.model,
-            'messages': messages,
-            'temperature': temperature or self.temperature,
-            'max_tokens': max_tokens or self.max_tokens,
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature or self.temperature,
+            "max_tokens": max_tokens or self.max_tokens,
         }
 
         # Add API key if available
         if self.api_key:
-            kwargs['api_key'] = self.api_key
+            kwargs["api_key"] = self.api_key
 
         # Add API base if configured
         if self.api_base:
-            kwargs['api_base'] = self.api_base
+            kwargs["api_base"] = self.api_base
 
         # Add response format if specified (for structured outputs)
         if response_format:
-            kwargs['response_format'] = response_format
+            kwargs["response_format"] = response_format
 
         response = completion(**kwargs)
         return response.choices[0].message.content
@@ -108,13 +109,13 @@ async def process_nl_query(user_id: str, query: str) -> Dict[str, Any]:
     prompt = f"""You are a financial analysis assistant. Analyze this user's financial data and answer their question.
 
 User's Financial Context:
-- Total accounts: {context.get('account_count', 0)}
-- Current month spending: ${context.get('current_month_spending', 0)}
-- Active budgets: {json.dumps(context.get('budgets', []))}
-- Top categories: {json.dumps(context.get('top_categories', []))}
+- Total accounts: {context.get("account_count", 0)}
+- Current month spending: ${context.get("current_month_spending", 0)}
+- Active budgets: {json.dumps(context.get("budgets", []))}
+- Top categories: {json.dumps(context.get("top_categories", []))}
 
 Recent transactions (last 30 days):
-{json.dumps(context.get('recent_transactions', [])[:50], indent=2, default=str)}
+{json.dumps(context.get("recent_transactions", [])[:50], indent=2, default=str)}
 
 User's question: {query}
 
@@ -134,11 +135,7 @@ Provide a clear, concise answer with specific numbers. Format your response as J
         return result
     except json.JSONDecodeError:
         # If response isn't JSON, wrap it
-        return {
-            "response": response,
-            "query_type": "general",
-            "data": None
-        }
+        return {"response": response, "query_type": "general", "data": None}
 
 
 async def generate_insights(user_id: str) -> List[Dict[str, Any]]:
@@ -157,11 +154,11 @@ async def generate_insights(user_id: str) -> List[Dict[str, Any]]:
     prompt = f"""You are a financial advisor AI. Analyze this user's financial data and generate actionable insights.
 
 Financial Data:
-- Current month spending: ${context.get('current_month_spending', 0)}
-- Previous month spending: ${context.get('previous_month_spending', 0)}
-- Budgets: {json.dumps(context.get('budgets', []))}
-- Top spending categories: {json.dumps(context.get('top_categories', []))}
-- Recent transactions: {json.dumps(context.get('recent_transactions', [])[:30], default=str)}
+- Current month spending: ${context.get("current_month_spending", 0)}
+- Previous month spending: ${context.get("previous_month_spending", 0)}
+- Budgets: {json.dumps(context.get("budgets", []))}
+- Top spending categories: {json.dumps(context.get("top_categories", []))}
+- Recent transactions: {json.dumps(context.get("recent_transactions", [])[:30], default=str)}
 
 Generate 3-5 insights as a JSON array:
 [
@@ -212,16 +209,16 @@ async def analyze_statement_structure(content: Dict[str, Any]) -> Dict[str, Any]
         }
     """
     # Build prompt based on content type
-    if content.get('format_type') == 'pdf':
-        pdf_content = content.get('content', {})
-        account_info = content.get('account_info', {})
+    if content.get("format_type") == "pdf":
+        pdf_content = content.get("content", {})
+        account_info = content.get("account_info", {})
 
         prompt = f"""Analyze this bank statement and extract metadata.
 
 PDF Content:
-- Full Text Sample: {pdf_content.get('full_text', '')[:2000]}
-- Transaction Section: {pdf_content.get('transaction_section', '')[:1500]}
-- Has Tables: {pdf_content.get('has_tables', False)}
+- Full Text Sample: {pdf_content.get("full_text", "")[:2000]}
+- Transaction Section: {pdf_content.get("transaction_section", "")[:1500]}
+- Has Tables: {pdf_content.get("has_tables", False)}
 - Detected Account Info: {json.dumps(account_info)}
 
 Return JSON with this structure:
@@ -244,21 +241,21 @@ Guidelines:
     else:
         # CSV format
         csv_metadata = content
-        date_range = csv_metadata.get('date_range', {})
+        date_range = csv_metadata.get("date_range", {})
 
         prompt = f"""Analyze this CSV bank statement metadata and extract information.
 
 CSV Metadata:
 - Format: CSV
-- Transaction count: {csv_metadata.get('transaction_count', 0)}
-- Date range: {date_range.get('start')} to {date_range.get('end')}
+- Transaction count: {csv_metadata.get("transaction_count", 0)}
+- Date range: {date_range.get("start")} to {date_range.get("end")}
 
 Return JSON with this structure:
 {{
   "institution": "bank name or null",
   "account_number_last4": "null for CSV",
   "account_type": "unknown",
-  "statement_period": {{"start_date": "{date_range.get('start', '')}", "end_date": "{date_range.get('end', '')}"}},
+  "statement_period": {{"start_date": "{date_range.get("start", "")}", "end_date": "{date_range.get("end", "")}"}},
   "format_type": "csv",
   "confidence": 0.7
 }}
@@ -279,15 +276,14 @@ The user will need to specify the account during import.
             "institution": None,
             "account_number_last4": None,
             "account_type": "unknown",
-            "statement_period": content.get('date_range', {}),
-            "format_type": content.get('format_type', 'unknown'),
-            "confidence": 0.3
+            "statement_period": content.get("date_range", {}),
+            "format_type": content.get("format_type", "unknown"),
+            "confidence": 0.3,
         }
 
 
 async def extract_transactions(
-    content: Dict[str, Any],
-    statement_info: Dict[str, Any]
+    content: Dict[str, Any], statement_info: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     """
     Extract transactions from parsed statement content.
@@ -308,20 +304,20 @@ async def extract_transactions(
         }]
     """
     # If content is already parsed transactions (from CSV), enhance with AI categorization
-    if isinstance(content, list) and len(content) > 0 and 'date' in content[0]:
+    if isinstance(content, list) and len(content) > 0 and "date" in content[0]:
         # Already parsed CSV transactions - just add AI categorization
         return await categorize_transactions_batch(content)
 
     # PDF content - need to extract transactions from text/tables
-    pdf_content = content.get('content', {})
+    pdf_content = content.get("content", {})
 
     prompt = f"""Extract transactions from this bank statement.
 
 Statement Info: {json.dumps(statement_info)}
 
 Content:
-- Transaction Section: {pdf_content.get('transaction_section', '')}
-- Tables: {json.dumps(pdf_content.get('tables', [])[:2])}
+- Transaction Section: {pdf_content.get("transaction_section", "")}
+- Tables: {json.dumps(pdf_content.get("tables", [])[:2])}
 
 Return JSON array of transactions:
 [{{
@@ -356,7 +352,7 @@ Categories: Income, Housing, Transportation, Food, Shopping, Entertainment, Heal
 
 
 async def categorize_transactions_batch(
-    transactions: List[Dict[str, Any]]
+    transactions: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
     Categorize a batch of transactions using AI.
@@ -373,16 +369,34 @@ async def categorize_transactions_batch(
     # Define category structure
     categories = {
         "Income": ["Salary", "Freelance", "Investment Income", "Gifts", "Refunds"],
-        "Housing": ["Rent/Mortgage", "Utilities", "Internet", "Home Maintenance", "Furniture"],
-        "Transportation": ["Gas", "Public Transit", "Ride Share", "Car Maintenance", "Parking"],
+        "Housing": [
+            "Rent/Mortgage",
+            "Utilities",
+            "Internet",
+            "Home Maintenance",
+            "Furniture",
+        ],
+        "Transportation": [
+            "Gas",
+            "Public Transit",
+            "Ride Share",
+            "Car Maintenance",
+            "Parking",
+        ],
         "Food": ["Groceries", "Restaurants", "Coffee Shops", "Fast Food", "Delivery"],
         "Shopping": ["Clothing", "Electronics", "Home Goods", "Personal Care", "Books"],
-        "Entertainment": ["Streaming Services", "Movies", "Gaming", "Hobbies", "Events"],
+        "Entertainment": [
+            "Streaming Services",
+            "Movies",
+            "Gaming",
+            "Hobbies",
+            "Events",
+        ],
         "Healthcare": ["Medical", "Dental", "Pharmacy", "Health Insurance", "Fitness"],
         "Financial": ["Bank Fees", "Interest", "Investments", "Insurance", "Taxes"],
         "Personal": ["Haircut", "Spa", "Subscriptions", "Gifts", "Education"],
         "Travel": ["Flights", "Hotels", "Vacation", "Travel Insurance"],
-        "Other": ["Uncategorized"]
+        "Other": ["Uncategorized"],
     }
 
     # Limit batch size to avoid token limits
@@ -390,7 +404,7 @@ async def categorize_transactions_batch(
     all_categorized = []
 
     for i in range(0, len(transactions), batch_size):
-        batch = transactions[i:i+batch_size]
+        batch = transactions[i : i + batch_size]
 
         prompt = f"""You are a financial transaction categorization expert. Analyze these transactions and categorize each one.
 
@@ -425,7 +439,9 @@ Guidelines:
 """
 
         messages = [{"role": "user", "content": prompt}]
-        response = await llm_service.complete(messages, max_tokens=4096, temperature=0.1)
+        response = await llm_service.complete(
+            messages, max_tokens=4096, temperature=0.1
+        )
 
         try:
             categorized_batch = json.loads(response)
@@ -433,17 +449,16 @@ Guidelines:
         except json.JSONDecodeError:
             # If parsing fails, return original batch with default category
             for txn in batch:
-                txn['category'] = 'Other'
-                txn['subcategory'] = 'Uncategorized'
-                txn['confidence'] = 0.0
+                txn["category"] = "Other"
+                txn["subcategory"] = "Uncategorized"
+                txn["confidence"] = 0.0
             all_categorized.extend(batch)
 
     return all_categorized
 
 
 async def suggest_account_match(
-    statement_metadata: Dict[str, Any],
-    user_accounts: List[Dict[str, Any]]
+    statement_metadata: Dict[str, Any], user_accounts: List[Dict[str, Any]]
 ) -> Dict[str, Any]:
     """
     Suggest which account this statement belongs to.
@@ -498,9 +513,9 @@ Guidelines:
         return suggestion
     except json.JSONDecodeError:
         # Return fallback - suggest creating new account
-        institution = statement_metadata.get('institution', 'Unknown')
-        account_type = statement_metadata.get('account_type', 'Unknown')
-        last4 = statement_metadata.get('account_number_last4', '')
+        institution = statement_metadata.get("institution", "Unknown")
+        account_type = statement_metadata.get("account_type", "Unknown")
+        last4 = statement_metadata.get("account_number_last4", "")
 
         account_name = f"{institution} {account_type.title()}"
         if last4:
@@ -511,7 +526,7 @@ Guidelines:
             "confidence": 0.0,
             "reasoning": "Unable to parse AI response",
             "should_create_new": True,
-            "suggested_account_name": account_name
+            "suggested_account_name": account_name,
         }
 
 
@@ -523,10 +538,10 @@ async def get_user_financial_context(user_id: str) -> Dict[str, Any]:
     # This is a placeholder that returns mock data
 
     return {
-        'account_count': 0,
-        'current_month_spending': 0,
-        'previous_month_spending': 0,
-        'budgets': [],
-        'top_categories': [],
-        'recent_transactions': []
+        "account_count": 0,
+        "current_month_spending": 0,
+        "previous_month_spending": 0,
+        "budgets": [],
+        "top_categories": [],
+        "recent_transactions": [],
     }

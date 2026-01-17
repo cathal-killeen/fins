@@ -1,6 +1,7 @@
 """
 Recurring transaction detection workflow.
 """
+
 from prefect import flow, task
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
@@ -27,12 +28,17 @@ async def detect_recurring_transactions(user_id: str) -> List[Dict[str, Any]]:
 @task
 async def mark_as_recurring(recurring_groups: List[Dict[str, Any]]):
     """Mark transactions as recurring and create recurring groups"""
-    from app.services.analytics_service import create_recurring_group, mark_transactions_recurring
+    from app.services.analytics_service import (
+        create_recurring_group,
+        mark_transactions_recurring,
+    )
 
     for group in recurring_groups:
         group_id = await create_recurring_group(group)
-        await mark_transactions_recurring(group['transaction_ids'], group_id)
-        print(f"Created recurring group {group_id} with {len(group['transaction_ids'])} transactions")
+        await mark_transactions_recurring(group["transaction_ids"], group_id)
+        print(
+            f"Created recurring group {group_id} with {len(group['transaction_ids'])} transactions"
+        )
 
     return len(recurring_groups)
 
@@ -53,15 +59,12 @@ async def recurring_detection_flow():
 
     if not users:
         print("No users to process")
-        return {
-            'total_users': 0,
-            'recurring_patterns_found': 0
-        }
+        return {"total_users": 0, "recurring_patterns_found": 0}
 
     total_patterns = 0
 
     for user in users:
-        recurring = await detect_recurring_transactions(user['id'])
+        recurring = await detect_recurring_transactions(user["id"])
         if recurring:
             count = await mark_as_recurring(recurring)
             total_patterns += count
@@ -69,7 +72,4 @@ async def recurring_detection_flow():
 
     print(f"✅ Detected {total_patterns} total recurring patterns")
 
-    return {
-        'total_users': len(users),
-        'recurring_patterns_found': total_patterns
-    }
+    return {"total_users": len(users), "recurring_patterns_found": total_patterns}

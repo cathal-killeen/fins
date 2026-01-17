@@ -1,6 +1,7 @@
 """
 Transaction import service for CSV/OFX files.
 """
+
 from typing import List, Dict, Any
 import csv
 import io
@@ -33,17 +34,17 @@ async def parse_csv(file_content: bytes) -> List[Dict[str, Any]]:
     # - Amount formats (positive/negative)
     # - Column name variations
 
-    content = file_content.decode('utf-8')
+    content = file_content.decode("utf-8")
     reader = csv.DictReader(io.StringIO(content))
 
     transactions = []
     for row in reader:
         # This is a basic example - needs to be more robust
         transaction = {
-            'date': row.get('Date') or row.get('date'),
-            'amount': row.get('Amount') or row.get('amount'),
-            'description': row.get('Description') or row.get('description'),
-            'merchant': row.get('Merchant') or row.get('merchant'),
+            "date": row.get("Date") or row.get("date"),
+            "amount": row.get("Amount") or row.get("amount"),
+            "description": row.get("Description") or row.get("description"),
+            "merchant": row.get("Merchant") or row.get("merchant"),
         }
         transactions.append(transaction)
 
@@ -51,9 +52,7 @@ async def parse_csv(file_content: bytes) -> List[Dict[str, Any]]:
 
 
 async def import_transactions(
-    user_id: str,
-    account_id: str,
-    transactions: List[Dict[str, Any]]
+    user_id: str, account_id: str, transactions: List[Dict[str, Any]]
 ) -> Dict[str, int]:
     """
     Import transactions into the database.
@@ -67,8 +66,4 @@ async def import_transactions(
     # 3. Insert into database
     # 4. Return statistics
 
-    return {
-        'imported': 0,
-        'skipped': 0,
-        'failed': 0
-    }
+    return {"imported": 0, "skipped": 0, "failed": 0}

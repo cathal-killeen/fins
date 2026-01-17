@@ -1,6 +1,7 @@
 """
 PDF parsing utilities for bank statements.
 """
+
 import pdfplumber
 import PyPDF2
 import re
@@ -28,7 +29,7 @@ def extract_text_from_pdf(file_path: str) -> str:
 
         # Fallback to PyPDF2
         try:
-            with open(file_path, 'rb') as file:
+            with open(file_path, "rb") as file:
                 pdf_reader = PyPDF2.PdfReader(file)
                 for page in pdf_reader.pages:
                     text += page.extract_text() + "\n"
@@ -72,17 +73,17 @@ def find_transaction_section(text: str) -> str:
     """
     # Common section headers
     section_patterns = [
-        r'(?i)transactions?(?:\s+history)?',
-        r'(?i)account\s+activity',
-        r'(?i)transaction\s+details?',
-        r'(?i)activity\s+summary',
+        r"(?i)transactions?(?:\s+history)?",
+        r"(?i)account\s+activity",
+        r"(?i)transaction\s+details?",
+        r"(?i)activity\s+summary",
     ]
 
     for pattern in section_patterns:
         match = re.search(pattern, text)
         if match:
             # Return text from this point onwards
-            return text[match.start():]
+            return text[match.start() :]
 
     # If no section found, return all text
     return text
@@ -103,8 +104,8 @@ def parse_transaction_from_line(line: str) -> Optional[Dict[str, Any]]:
 
     # Pattern: date (various formats) + description + amount
     # This is a simplified pattern - real implementation would be more robust
-    date_pattern = r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}[/-]\d{1,2}[/-]\d{1,2}|[A-Z][a-z]{2}\s+\d{1,2})'
-    amount_pattern = r'[\$€£]?\s*([+-]?\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:DR|CR)?'
+    date_pattern = r"(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}[/-]\d{1,2}[/-]\d{1,2}|[A-Z][a-z]{2}\s+\d{1,2})"
+    amount_pattern = r"[\$€£]?\s*([+-]?\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:DR|CR)?"
 
     # Try to find date and amount
     date_match = re.search(date_pattern, line)
@@ -120,10 +121,10 @@ def parse_transaction_from_line(line: str) -> Optional[Dict[str, Any]]:
         description = line[desc_start:amount_pos].strip()
 
         return {
-            'raw_line': line,
-            'date_str': date_str,
-            'description': description,
-            'amount_str': amount_matches[-1],
+            "raw_line": line,
+            "date_str": date_str,
+            "description": description,
+            "amount_str": amount_matches[-1],
         }
 
     return None
@@ -145,10 +146,12 @@ def parse_pdf_with_ai_help(file_path: str) -> Dict[str, Any]:
     transaction_text = find_transaction_section(text)
 
     return {
-        'full_text': text[:5000],  # First 5000 chars
-        'transaction_section': transaction_text[:3000],  # First 3000 chars of transactions
-        'tables': tables[:3] if tables else [],  # First 3 tables
-        'has_tables': len(tables) > 0,
+        "full_text": text[:5000],  # First 5000 chars
+        "transaction_section": transaction_text[
+            :3000
+        ],  # First 3000 chars of transactions
+        "tables": tables[:3] if tables else [],  # First 3 tables
+        "has_tables": len(tables) > 0,
     }
 
 
@@ -165,9 +168,9 @@ def extract_account_info_from_pdf(text: str) -> Dict[str, Any]:
 
     # Look for account number (various patterns)
     account_patterns = [
-        r'Account\s+(?:Number|#):\s*(\d+)',
-        r'Account:\s*(\d+)',
-        r'(?:Acct|A/C)\s*[:#]\s*(\d+)',
+        r"Account\s+(?:Number|#):\s*(\d+)",
+        r"Account:\s*(\d+)",
+        r"(?:Acct|A/C)\s*[:#]\s*(\d+)",
     ]
 
     for pattern in account_patterns:
@@ -175,22 +178,31 @@ def extract_account_info_from_pdf(text: str) -> Dict[str, Any]:
         if match:
             account_num = match.group(1)
             # Only keep last 4 digits
-            info['account_number_last4'] = account_num[-4:] if len(account_num) >= 4 else account_num
+            info["account_number_last4"] = (
+                account_num[-4:] if len(account_num) >= 4 else account_num
+            )
             break
 
     # Look for account type
-    if re.search(r'\bchecking\b', text, re.IGNORECASE):
-        info['account_type'] = 'checking'
-    elif re.search(r'\bsavings\b', text, re.IGNORECASE):
-        info['account_type'] = 'savings'
-    elif re.search(r'\bcredit\s+card\b', text, re.IGNORECASE):
-        info['account_type'] = 'credit_card'
+    if re.search(r"\bchecking\b", text, re.IGNORECASE):
+        info["account_type"] = "checking"
+    elif re.search(r"\bsavings\b", text, re.IGNORECASE):
+        info["account_type"] = "savings"
+    elif re.search(r"\bcredit\s+card\b", text, re.IGNORECASE):
+        info["account_type"] = "credit_card"
 
     # Try to identify bank (common bank names)
-    banks = ['Chase', 'Bank of America', 'Wells Fargo', 'Citibank', 'Capital One', 'US Bank']
+    banks = [
+        "Chase",
+        "Bank of America",
+        "Wells Fargo",
+        "Citibank",
+        "Capital One",
+        "US Bank",
+    ]
     for bank in banks:
         if bank.lower() in text.lower():
-            info['institution'] = bank
+            info["institution"] = bank
             break
 
     return info
@@ -207,16 +219,16 @@ def parse_pdf_file(file_path: str) -> Dict[str, Any]:
         pdf_data = parse_pdf_with_ai_help(file_path)
 
         # Try to extract account info
-        account_info = extract_account_info_from_pdf(pdf_data['full_text'])
+        account_info = extract_account_info_from_pdf(pdf_data["full_text"])
 
         return {
-            'format_type': 'pdf',
-            'content': pdf_data,
-            'account_info': account_info,
-            'requires_ai_parsing': True,  # PDF always needs AI help
+            "format_type": "pdf",
+            "content": pdf_data,
+            "account_info": account_info,
+            "requires_ai_parsing": True,  # PDF always needs AI help
         }
     except Exception as e:
         return {
-            'error': f"Failed to parse PDF: {str(e)}",
-            'format_type': 'pdf',
+            "error": f"Failed to parse PDF: {str(e)}",
+            "format_type": "pdf",
         }

@@ -1,6 +1,7 @@
 """
 AI-powered chat and insights API endpoints.
 """
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -33,8 +34,8 @@ class InsightResponse(BaseModel):
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     message: ChatMessage,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Process natural language queries about finances.
@@ -46,21 +47,16 @@ async def chat(
     """
     try:
         result = await process_nl_query(
-            user_id=current_user["id"],
-            query=message.message
+            user_id=current_user["id"], query=message.message
         )
         return result
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing query: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
 
 
 @router.get("/insights", response_model=List[InsightResponse])
 async def get_insights(
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
     Get AI-generated financial insights.
@@ -76,20 +72,18 @@ async def get_insights(
         return insights
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Error generating insights: {str(e)}"
+            status_code=500, detail=f"Error generating insights: {str(e)}"
         )
 
 
 @router.post("/categorize-suggestion")
 async def suggest_category(
     transaction_id: str,
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Get AI suggestion for a specific transaction's category."""
     # TODO: Implement single transaction categorization
     raise HTTPException(
-        status_code=501,
-        detail="Category suggestion not yet implemented"
+        status_code=501, detail="Category suggestion not yet implemented"
     )

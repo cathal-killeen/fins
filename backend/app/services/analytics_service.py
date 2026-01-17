@@ -1,6 +1,7 @@
 """
 Analytics service for financial insights and data aggregation.
 """
+
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from app.database import get_duckdb_connection
@@ -15,8 +16,7 @@ async def generate_ai_insights() -> List[Dict[str, Any]]:
 
 
 async def find_recurring_patterns(
-    user_id: str,
-    since: datetime
+    user_id: str, since: datetime
 ) -> List[Dict[str, Any]]:
     """
     Find recurring transaction patterns.
@@ -48,11 +48,7 @@ async def get_active_budgets(user_id: str) -> List[Dict[str, Any]]:
     return []
 
 
-async def get_period_spending(
-    user_id: str,
-    category: str,
-    period: str
-) -> float:
+async def get_period_spending(user_id: str, category: str, period: str) -> float:
     """
     Get total spending for a category in the current period.
 
@@ -70,9 +66,7 @@ async def get_period_spending(
 
 
 async def get_spending_by_category_duckdb(
-    user_id: str,
-    start_date: datetime,
-    end_date: datetime
+    user_id: str, start_date: datetime, end_date: datetime
 ) -> List[Dict[str, Any]]:
     """
     Get spending breakdown by category using DuckDB.

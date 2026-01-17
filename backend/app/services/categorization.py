@@ -1,12 +1,12 @@
 """
 Transaction categorization service.
 """
+
 from typing import List, Dict, Any, Optional
 
 
 async def check_categorization_rules(
-    merchant_name: Optional[str],
-    description: str
+    merchant_name: Optional[str], description: str
 ) -> Optional[Dict[str, Any]]:
     """
     Check if there's a learned categorization rule for this transaction.
@@ -24,7 +24,7 @@ async def update_transaction_category(
     category: str,
     subcategory: Optional[str],
     confidence: float,
-    ai_categorized: bool
+    ai_categorized: bool,
 ):
     """Update a transaction's category."""
     # TODO: Implement database update

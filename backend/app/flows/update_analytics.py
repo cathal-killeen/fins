@@ -1,6 +1,7 @@
 """
 Analytics database update workflow - sync PostgreSQL to DuckDB.
 """
+
 from prefect import flow, task
 import duckdb
 from datetime import datetime
@@ -75,6 +76,6 @@ async def analytics_update_flow():
     insights = await generate_insights()
 
     return {
-        'sync_completed': True,
-        'insights_generated': len(insights) if insights else 0
+        "sync_completed": True,
+        "insights_generated": len(insights) if insights else 0,
     }
