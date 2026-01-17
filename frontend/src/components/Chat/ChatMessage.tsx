@@ -5,12 +5,22 @@ import clsx from 'clsx'
 
 interface ChatMessageProps {
   message: Message
+  onConfirmAccount?: (jobId: string, accountId: string) => void
+  onCreateAccount?: (jobId: string, accountName: string) => void
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+export default function ChatMessage({
+  message,
+  onConfirmAccount,
+  onCreateAccount,
+}: ChatMessageProps) {
   const isUser = message.type === 'user'
   const isSystem = message.type === 'system'
   const isFile = message.type === 'file'
+  const isAccountConfirmation = message.type === 'account-confirmation'
+  const accountMatch = message.metadata?.accountMatch
+  const jobId = message.metadata?.jobId
+  const statementMetadata = message.metadata?.statementMetadata
 
   const getIcon = () => {
     if (isUser) return <User className="w-5 h-5" />
@@ -63,6 +73,70 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
           {/* Message Text */}
           <div className="whitespace-pre-wrap">{message.content}</div>
+
+          {/* Account Confirmation */}
+          {isAccountConfirmation && accountMatch && jobId && (
+            <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
+              <div className="text-sm">
+                <div className="font-semibold">Suggested account</div>
+                <div className="text-xs opacity-75">
+                  {accountMatch.suggested_account_name ||
+                    (accountMatch.should_create_new
+                      ? 'New account'
+                      : 'Existing account')}
+                </div>
+              </div>
+              {statementMetadata && (
+                <div className="text-xs text-gray-600">
+                  {statementMetadata.institution && (
+                    <span>{statementMetadata.institution}</span>
+                  )}
+                  {statementMetadata.account_type && (
+                    <span>
+                      {statementMetadata.institution ? ' · ' : ''}
+                      {statementMetadata.account_type.replace('_', ' ')}
+                    </span>
+                  )}
+                  {statementMetadata.account_number_last4 && (
+                    <span>
+                      {(statementMetadata.institution || statementMetadata.account_type)
+                        ? ' · '
+                        : ''}
+                      ****{statementMetadata.account_number_last4}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="text-xs text-gray-600">
+                Confidence: {(accountMatch.confidence * 100).toFixed(0)}%
+              </div>
+              {accountMatch.reasoning && (
+                <div className="text-xs text-gray-600">{accountMatch.reasoning}</div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {accountMatch.should_create_new && accountMatch.suggested_account_name && (
+                  <button
+                    className="px-3 py-2 text-xs font-semibold rounded-md bg-primary-500 text-white hover:bg-primary-600 transition"
+                    onClick={() =>
+                      onCreateAccount?.(jobId, accountMatch.suggested_account_name as string)
+                    }
+                  >
+                    Create account
+                  </button>
+                )}
+                {!accountMatch.should_create_new && accountMatch.suggested_account_id && (
+                  <button
+                    className="px-3 py-2 text-xs font-semibold rounded-md bg-primary-500 text-white hover:bg-primary-600 transition"
+                    onClick={() =>
+                      onConfirmAccount?.(jobId, accountMatch.suggested_account_id as string)
+                    }
+                  >
+                    Use this account
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Processing Status */}
           {message.metadata?.processingStatus && (

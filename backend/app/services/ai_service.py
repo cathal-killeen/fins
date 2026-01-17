@@ -492,6 +492,23 @@ async def suggest_account_match(
             "suggested_account_name": "name for new account if creating"
         }
     """
+    if not user_accounts:
+        institution = statement_metadata.get("institution", "Unknown")
+        account_type = statement_metadata.get("account_type", "Unknown")
+        last4 = statement_metadata.get("account_number_last4", "")
+
+        account_name = f"{institution} {account_type.title()}"
+        if last4:
+            account_name += f" (...{last4})"
+
+        return {
+            "suggested_account_id": None,
+            "confidence": 0.9,
+            "reasoning": "User has no existing accounts, suggest creating a new one",
+            "should_create_new": True,
+            "suggested_account_name": account_name,
+        }
+
     prompt = f"""You are a financial account matching expert. Determine which account this statement belongs to.
 
 Statement Metadata:
@@ -516,6 +533,8 @@ Matching criteria (in order of importance):
 4. No matches = suggest creating new account
 
 Guidelines:
+- If there are zero existing accounts, always suggest creating a new account
+- If there are zero existing accounts, set suggested_account_id to null and confidence to 0.9
 - If multiple accounts match, choose the most recent or active one
 - If no good match (confidence < 0.7), suggest creating new account
 - For new accounts, suggest a descriptive name like "Chase Checking (...1234)"
@@ -526,6 +545,18 @@ Guidelines:
 
     try:
         suggestion = json.loads(response)
+        if suggestion.get("should_create_new") and not suggestion.get(
+            "suggested_account_name"
+        ):
+            institution = statement_metadata.get("institution", "Unknown")
+            account_type = statement_metadata.get("account_type", "Unknown")
+            last4 = statement_metadata.get("account_number_last4", "")
+
+            account_name = f"{institution} {account_type.title()}"
+            if last4:
+                account_name += f" (...{last4})"
+
+            suggestion["suggested_account_name"] = account_name
         return suggestion
     except json.JSONDecodeError:
         # Return fallback - suggest creating new account

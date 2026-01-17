@@ -34,6 +34,8 @@ class ProcessingStatusResponse(BaseModel):
     progress: int
     message: str
     error: Optional[str] = None
+    account_match: Optional[dict] = None
+    statement_metadata: Optional[dict] = None
 
 
 class AccountConfirmRequest(BaseModel):
@@ -142,6 +144,7 @@ async def get_processing_status(
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
 
     progress = job["progress"] or {}
+    metadata = job["metadata"] or {}
 
     return ProcessingStatusResponse(
         job_id=job["id"],
@@ -150,6 +153,8 @@ async def get_processing_status(
         progress=progress.get("percentage", 0),
         message=progress.get("message", ""),
         error=job["error_message"],
+        account_match=metadata.get("account_match"),
+        statement_metadata=metadata.get("statement_metadata"),
     )
 
 

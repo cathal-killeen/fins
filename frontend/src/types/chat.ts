@@ -34,10 +34,18 @@ export interface ProcessingStatus {
   message: string
 }
 
+export interface StatementMetadata {
+  institution?: string
+  account_type?: string
+  account_number_last4?: string
+}
+
 export interface AccountMatch {
-  suggested: Account | null
-  alternatives: Account[]
+  suggested_account_id: string | null
   confidence: number
+  reasoning: string
+  should_create_new: boolean
+  suggested_account_name?: string
 }
 
 export interface TransactionSummary {
@@ -62,6 +70,7 @@ export interface MessageMetadata {
   fileInfo?: FileInfo
   processingStatus?: ProcessingStatus
   accountMatch?: AccountMatch
+  statementMetadata?: StatementMetadata
   transactionSummary?: TransactionSummary
   jobId?: string
 }
